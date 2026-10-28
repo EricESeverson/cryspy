@@ -321,7 +321,9 @@ class Compressor:
                     longest_match = i2
                     longest_match_len = cur_match_len
             # assume that match length must be greater than 2
-            if longest_match_len >= 2:
+            # and only use the match if it is cheaper than writing the literals
+            if longest_match_len >= 2 and self._match_bits(i, i-longest_match, longest_match_len) < \
+                    sum(1 + len(self.encoding_tree[c]) for c in b[i:i+longest_match_len]):
                 entry = LZ77_Entry(False, (i-longest_match, longest_match_len))
                 out.append(entry)
                 i += longest_match_len
@@ -330,6 +332,10 @@ class Compressor:
                 out.append(entry)
                 i += 1
         return out
+
+    def _match_bits(self, pos, n, m):
+        """Bits LZ77_to_bits spends on a match at position pos with offset n, length m."""
+        return 1 + (2 * n.bit_length() - 1) + (2 * m.bit_length() - 1)
 
     def LZ77_decode(self, lst: list[LZ77_Entry]) -> Sequence:
         """Decompressed lst using LZ77. LZ77_decode(LZ77_encode(b)) is b.
