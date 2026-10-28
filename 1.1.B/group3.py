@@ -44,16 +44,16 @@ class MinHeap[T]:
             left = 2 * cur + 1
             right = 2 * cur + 2
 
-            if (left < self.size) and (self.lst[left] < self.lst[cur]):
-                self._swap(cur, left)
-                cur = left
-                continue
-            if (right < self.size) and (self.lst[right] < self.lst[cur]):
-                self._swap(cur, right)
-                cur = right
-                continue
-
-            break
+            # swap with the smaller child, so the smallest of the three ends up on top
+            smallest = cur
+            if (left < self.size) and (self.lst[left] < self.lst[smallest]):
+                smallest = left
+            if (right < self.size) and (self.lst[right] < self.lst[smallest]):
+                smallest = right
+            if smallest == cur:
+                break
+            self._swap(cur, smallest)
+            cur = smallest
 
         return top
     
