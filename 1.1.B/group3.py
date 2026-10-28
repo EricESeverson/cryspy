@@ -44,16 +44,16 @@ class MinHeap[T]:
             left = 2 * cur + 1
             right = 2 * cur + 2
 
-            if (left < self.size) and (self.lst[left] < self.lst[cur]):
-                self._swap(cur, left)
-                cur = left
-                continue
-            if (right < self.size) and (self.lst[right] < self.lst[cur]):
-                self._swap(cur, right)
-                cur = right
-                continue
-
-            break
+            # swap with the smaller child, so the smallest of the three ends up on top
+            smallest = cur
+            if (left < self.size) and (self.lst[left] < self.lst[smallest]):
+                smallest = left
+            if (right < self.size) and (self.lst[right] < self.lst[smallest]):
+                smallest = right
+            if smallest == cur:
+                break
+            self._swap(cur, smallest)
+            cur = smallest
 
         return top
     
@@ -227,14 +227,14 @@ def decode_compressed(b, itos):
             i += 1
             m = 0
             for _ in range(l):
-                m << 1
+                m <<= 1
                 if b[i] == "1":
                     m += 1
                 i += 1
             # read n same way
             n = 0
             for _ in range(l):
-                n << 1
+                n <<= 1
                 if b[i] == "1":
                     n += 1
                 i += 1
@@ -411,14 +411,14 @@ class Compressor:
                 i += 1
                 m = 0
                 for _ in range(l):
-                    m << 1
+                    m <<= 1
                     if b[i] == "1":
                         m += 1
                     i += 1
                 # read n same way
                 n = 0
                 for _ in range(l):
-                    n << 1
+                    n <<= 1
                     if b[i] == "1":
                         n += 1
                     i += 1
