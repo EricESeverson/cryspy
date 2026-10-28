@@ -365,20 +365,14 @@ class Compressor:
 
             n, m = a.val
 
-            l = ceil(log2(max(n, m)+1))
-
-            for _ in range(l-1):
-                bits.append("0")
-            bits.append("1")
-
-
-            n_bitstr = _to_binary(n, l)
-            m_bitstr = _to_binary(m, l)
-
-            for b in (n_bitstr):
-                bits.append(b)
-            for b in (m_bitstr):
-                bits.append(b)
+            # each number gets its own width: (width - 1) zeros, then the
+            # number in binary, whose leading 1 marks where the zeros end
+            for x in (n, m):
+                x_bitstr = bin(x)[2:]
+                for _ in range(len(x_bitstr) - 1):
+                    bits.append("0")
+                for b in x_bitstr:
+                    bits.append(b)
 
         return "".join(bits)
 
@@ -402,27 +396,21 @@ class Compressor:
                 i += 1
                 # then this is LZ77 thing
                 
-                # figure out byte length of integers
-                l = 1 # l is subtracted one from encode
-                while b[i] == "0":
-                    i += 1
-                    l += 1
-                # skip the one bit
-                i += 1
-                m = 0
-                for _ in range(l):
-                    m <<= 1
-                    if b[i] == "1":
-                        m += 1
-                    i += 1
-                # read n same way
-                n = 0
-                for _ in range(l):
-                    n <<= 1
-                    if b[i] == "1":
-                        n += 1
-                    i += 1
-                entry = LZ77_Entry(False, (m, n))
+                vals = []
+                for _ in range(2):
+                    # count zeros to get the width, then read that many bits
+                    l = 1
+                    while b[i] == "0":
+                        i += 1
+                        l += 1
+                    x = 0
+                    for _ in range(l):
+                        x <<= 1
+                        if b[i] == "1":
+                            x += 1
+                        i += 1
+                    vals.append(x)
+                entry = LZ77_Entry(False, (vals[0], vals[1]))
                 s.append(entry)
         return s
 
