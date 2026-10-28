@@ -227,14 +227,14 @@ def decode_compressed(b, itos):
             i += 1
             m = 0
             for _ in range(l):
-                m << 1
+                m <<= 1
                 if b[i] == "1":
                     m += 1
                 i += 1
             # read n same way
             n = 0
             for _ in range(l):
-                n << 1
+                n <<= 1
                 if b[i] == "1":
                     n += 1
                 i += 1
@@ -411,14 +411,14 @@ class Compressor:
                 i += 1
                 m = 0
                 for _ in range(l):
-                    m << 1
+                    m <<= 1
                     if b[i] == "1":
                         m += 1
                     i += 1
                 # read n same way
                 n = 0
                 for _ in range(l):
-                    n << 1
+                    n <<= 1
                     if b[i] == "1":
                         n += 1
                     i += 1
