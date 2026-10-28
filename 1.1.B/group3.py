@@ -335,7 +335,7 @@ class Compressor:
 
     def _match_bits(self, pos, n, m):
         """Bits LZ77_to_bits spends on a match at position pos with offset n, length m."""
-        return 1 + (2 * n.bit_length() - 1) + (2 * m.bit_length() - 1)
+        return 1 + (pos - 1).bit_length() + (2 * m.bit_length() - 1)
 
     def LZ77_decode(self, lst: list[LZ77_Entry]) -> Sequence:
         """Decompressed lst using LZ77. LZ77_decode(LZ77_encode(b)) is b.
@@ -358,27 +358,34 @@ class Compressor:
 
     def LZ77_to_bits(self, LZ77_list: list[LZ77_Entry], stoi: dict[Hashable, str]) -> str:
         bits = []
+        pos = 0  # how many symbols have been encoded so far
 
         for a in LZ77_list:
             if a.is_literal:
                 bits.append("0")
                 for b in stoi[a.val]:
                     bits.append(b)
-
+                pos += 1
                 continue
 
             bits.append("1")
 
             n, m = a.val
 
-            # each number gets its own width: (width - 1) zeros, then the
-            # number in binary, whose leading 1 marks where the zeros end
-            for x in (n, m):
-                x_bitstr = bin(x)[2:]
-                for _ in range(len(x_bitstr) - 1):
-                    bits.append("0")
-                for b in x_bitstr:
+            # the offset n is between 1 and pos, and the decoder knows pos too,
+            # so n - 1 fits in a fixed ceil(log2(pos)) bits with no width prefix
+            w = (pos - 1).bit_length()
+            if w > 0:
+                for b in _to_binary(n - 1, w):
                     bits.append(b)
+
+            # the length still gets its own width: (width - 1) zeros, then binary
+            m_bitstr = bin(m)[2:]
+            for _ in range(len(m_bitstr) - 1):
+                bits.append("0")
+            for b in m_bitstr:
+                bits.append(b)
+            pos += m
 
         return "".join(bits)
 
@@ -386,6 +393,7 @@ class Compressor:
         keys = itos.keys()
         i = 0
         s = []
+        pos = 0  # how many symbols have been decoded so far
         while i < len(b):
             if b[i] == "0":
                 i += 1
@@ -398,26 +406,34 @@ class Compressor:
                 entry = LZ77_Entry(True, itos[n])
                 s.append(entry)
                 i += 1
+                pos += 1
             else:
                 i += 1
                 # then this is LZ77 thing
                 
-                vals = []
-                for _ in range(2):
-                    # count zeros to get the width, then read that many bits
-                    l = 1
-                    while b[i] == "0":
-                        i += 1
-                        l += 1
-                    x = 0
-                    for _ in range(l):
-                        x <<= 1
-                        if b[i] == "1":
-                            x += 1
-                        i += 1
-                    vals.append(x)
-                entry = LZ77_Entry(False, (vals[0], vals[1]))
+                # offset: n - 1 in a fixed ceil(log2(pos)) bits
+                w = (pos - 1).bit_length()
+                n = 0
+                for _ in range(w):
+                    n <<= 1
+                    if b[i] == "1":
+                        n += 1
+                    i += 1
+                n += 1
+                # length: count zeros to get the width, then read that many bits
+                l = 1
+                while b[i] == "0":
+                    i += 1
+                    l += 1
+                m = 0
+                for _ in range(l):
+                    m <<= 1
+                    if b[i] == "1":
+                        m += 1
+                    i += 1
+                entry = LZ77_Entry(False, (n, m))
                 s.append(entry)
+                pos += m
         return s
 
     def __init__(self, alphabet, letter_weights: dict) -> None:
