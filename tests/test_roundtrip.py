@@ -12,7 +12,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from cryspy import AdditionCipher, Blocker, CompressionEncoder, CryptoStack, TextEncoder
 from cryspy.compression import MinHeap
 
-ALPHABET = " ABCDEFGHIJKLMNOPQRSTUVWXYZ.-/"
+ALPHABET = "_ABCDEFGHIJKLMNOPQRSTUVWXYZ.-/"
 
 
 def random_message(alphabet, rng, n):
@@ -38,8 +38,8 @@ def test_blocker():
 def test_compression_encoder():
     rng = random.Random(1)
     enc = CompressionEncoder(ALPHABET)
-    for message in ["", "A", "AB", "SIX SEVENNNNNNNNN", "ABABAB", "ABCABCABC",
-                    "BAD BAD BAD CAB BAD DAB BAD CAB"]:
+    for message in ["", "A", "AB", "SIX_SEVENNNNNNNNN", "ABABAB", "ABCABCABC",
+                    "BAD_BAD_BAD_CAB_BAD_DAB_BAD_CAB"]:
         assert enc.decode(enc.encode(message)) == message
     for _ in range(200):
         message = random_message("ABCD", rng, rng.randrange(1, 80))
