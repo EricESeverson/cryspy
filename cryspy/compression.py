@@ -5,6 +5,7 @@ from .stack import bits_to_blocks, blocks_to_bits
 
 
 class CompressionEncoder(Encoder):
+    """TODO"""
     def __init__(self, alphabet: str, letter_weights: dict[Hashable, float] | None = None) -> None:
         self.alphabet = alphabet
         if letter_weights is None:
@@ -12,6 +13,7 @@ class CompressionEncoder(Encoder):
         self.code = create_huffman_tree(letter_weights)
 
     def compress(self, message: str) -> str:
+        """TODO"""
         for c in message:
             if c not in self.code:
                 raise ValueError(f"{c!r} is not in the alphabet")
@@ -19,18 +21,22 @@ class CompressionEncoder(Encoder):
         return LZ77_to_bits(LZ77_list, self.code)
 
     def decompress(self, bits: str) -> str:
+        """TODO"""
         LZ77_list = bits_to_LZ77(bits, self.code)
         return "".join(LZ77_decode(LZ77_list))
 
     def encode(self, message: str) -> bytes:
         # same padding rule as Blocker, with 8-bit blocks
+        """TODO"""
         return bytes(bits_to_blocks(self.compress(message), 8))
 
     def decode(self, data: bytes) -> str:
+        """TODO"""
         return self.decompress(blocks_to_bits(list(data), 8))
 
 
 class LZ77_Entry:
+    """TODO"""
     def __init__(self, is_literal: bool, val):
         self.is_literal = is_literal
         self.val = val
@@ -74,6 +80,7 @@ def LZ77_encode(message: Sequence, code: dict[Hashable, str]) -> list[LZ77_Entry
 
 
 def match_bits(i: int, d: int, m: int) -> int:
+    """TODO"""
     return 1 + (i - 1).bit_length() + (2 * m.bit_length() - 1)
 
 
@@ -105,6 +112,7 @@ def LZ77_decode(lst: list[LZ77_Entry]) -> list:
 
 
 def LZ77_to_bits(LZ77_list: list[LZ77_Entry], code: dict[Hashable, str]) -> str:
+    """TODO"""
     bits = []
     i = 0  # how many symbols have been encoded so far
 
@@ -131,11 +139,13 @@ def LZ77_to_bits(LZ77_list: list[LZ77_Entry], code: dict[Hashable, str]) -> str:
 
 
 def _to_binary(n: int, width: int) -> str:
+    """TODO"""
     n_bitstr = bin(n)[2:]
     return ("0" * (width - len(n_bitstr))) + n_bitstr
 
 
 def bits_to_LZ77(bits: str, code: dict[Hashable, str]) -> list[LZ77_Entry]:
+    """TODO"""
     letter_of = {code[c]: c for c in code}
     k = 0  # position in bits
     i = 0  # how many symbols have been decoded so far
@@ -230,6 +240,7 @@ def create_huffman_tree(letter_weights: dict[Hashable, float]) -> dict[Hashable,
 
 
 class MinHeap:
+    """TODO"""
     def __init__(self) -> None:
         self.lst = []
         self.size = 0
@@ -238,11 +249,13 @@ class MinHeap:
         return self.size
 
     def _swap(self, a: int, b: int) -> None:
+        """TODO"""
         temp = self.lst[a]
         self.lst[a] = self.lst[b]
         self.lst[b] = temp
 
     def insert(self, element) -> None:
+        """TODO"""
         self.lst.append(element)
         cur = self.size
         self.size += 1
@@ -255,6 +268,7 @@ class MinHeap:
             cur = parent
 
     def pop(self):
+        """TODO"""
         if self.size == 0:
             raise IndexError("Cannot pop from an empty heap")
 

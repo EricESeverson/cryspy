@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 
 
 class Cipher(ABC):
+    """TODO"""
     @abstractmethod
     def encrypt(self, num: int, key) -> int:
         """Encrypts a singular number.
@@ -28,11 +29,14 @@ class Cipher(ABC):
 
 
 class AdditionCipher(Cipher):
+    """TODO"""
     def __init__(self, mod: int) -> None:
         self.mod = mod
 
     def encrypt(self, num: int, key: int) -> int:
+        """TODO"""
         return (num + key) % self.mod
 
     def decrypt(self, num: int, key: int) -> int:
+        """TODO"""
         return (num - key) % self.mod
