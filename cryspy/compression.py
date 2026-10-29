@@ -37,7 +37,16 @@ class LZ77_Entry:
 
 
 def LZ77_encode(message: Sequence, code: dict[Hashable, str]) -> list[LZ77_Entry]:
-    """O(len(b)^3)"""
+    """Compress message using LZ77. O(len(message)^3).
+
+    Args:
+        message: the symbols to compress.
+        code: the Huffman code, used to tell whether a match costs fewer
+            bits than its literals.
+
+    Returns:
+        A list of literals and (distance, length) matches.
+    """
 
     out = []
     i = 0
@@ -69,8 +78,16 @@ def match_bits(i: int, d: int, m: int) -> int:
 
 
 def LZ77_decode(lst: list[LZ77_Entry]) -> list:
-    """Decompressed lst using LZ77. LZ77_decode(LZ77_encode(b)) is b.
-    O(len(b))"""
+    """Decompress lst using LZ77. O(len(message)).
+
+    LZ77_decode(LZ77_encode(message, code)) is list(message).
+
+    Args:
+        lst: the entries from LZ77_encode.
+
+    Returns:
+        The decompressed symbols, as a list.
+    """
 
     out = []
     for a in lst:
@@ -162,9 +179,17 @@ def bits_to_LZ77(bits: str, code: dict[Hashable, str]) -> list[LZ77_Entry]:
 
 
 def create_huffman_tree(letter_weights: dict[Hashable, float]) -> dict[Hashable, str]:
-    """From frequencies of each character in an alphabet,
-    creates a dict mapping byte to its prefix free string.
-    O(n log n) in the alphabet size"""
+    """Build a Huffman code. O(n log n) in the alphabet size.
+
+    Args:
+        letter_weights: the frequency of each character in an alphabet.
+
+    Returns:
+        A dict mapping each character to its prefix free string of 0s and 1s.
+
+    Raises:
+        ValueError: if there are fewer than two letters.
+    """
 
     if len(letter_weights) < 2:
         raise ValueError("A Huffman code needs at least two letters")

@@ -24,12 +24,26 @@ class Blocker:
         self.block_size = block_size
 
     def block(self, data: bytes) -> list[int]:
-        """bytes object --> list of ints"""
+        """Cut bytes into blocks of block_size bits.
+
+        Args:
+            data: the bytes to cut up.
+
+        Returns:
+            The number of padding bits, then one int < 2**block_size per block.
+        """
         bits = "".join(f"{byte:08b}" for byte in data)
         return bits_to_blocks(bits, self.block_size)
 
     def deblock(self, ints: list[int]) -> bytes:
-        """list of ints --> bytes object"""
+        """Join blocks of block_size bits back into bytes.
+
+        Args:
+            ints: the number of padding bits, then the blocks, as from block.
+
+        Returns:
+            The original bytes.
+        """
         bits = blocks_to_bits(ints, self.block_size)
         # the 8s here are for grouping 8 bits into a byte
         return bytes(int(bits[k:k + 8], 2) for k in range(0, len(bits), 8))
@@ -52,7 +66,15 @@ def from_text(text: str, text_format: str) -> bytes:
 
 
 class CryptoStack:
-    """encode, block, cipher OR decipher, deblock, decode"""
+    """Encode, block, cipher OR decipher, deblock, decode.
+
+    Args:
+        encoder: turns a message into bytes and back.
+        block_size: the number of bits in a block.
+        cipher: encrypts one block at a time; its mod must be at least
+            2**block_size.
+        text_format: "hex" or "base64", the text that send returns.
+    """
 
     def __init__(self, encoder: Encoder, block_size: int, cipher: Cipher,
                  text_format: str = "hex") -> None:
