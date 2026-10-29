@@ -1,12 +1,38 @@
-"""CryptoStack: encode, block, encrypt, then write as text to paste into chat."""
-
-from __future__ import annotations
-
 import base64
 
-from .blocker import Blocker
 from .ciphers import Cipher
 from .encoders import Encoder
+
+
+def bits_to_blocks(bits: str, block_size: int) -> list[int]:
+    padding_len = (-len(bits)) % block_size
+    bits += "0" * padding_len
+    # the int(..., 2) means reading off in base 2
+    blocks = [int(bits[k:k + block_size], 2)
+              for k in range(0, len(bits), block_size)]
+    return [padding_len] + blocks
+
+
+def blocks_to_bits(ints: list[int], block_size: int) -> str:
+    padding_len = ints[0]
+    bits = "".join(f"{num:0{block_size}b}" for num in ints[1:])
+    return bits[:len(bits) - padding_len]
+
+
+class Blocker:
+    def __init__(self, block_size: int) -> None:
+        self.block_size = block_size
+
+    def block(self, data: bytes) -> list[int]:
+        """bytes object --> list of ints"""
+        bits = "".join(f"{byte:08b}" for byte in data)
+        return bits_to_blocks(bits, self.block_size)
+
+    def deblock(self, ints: list[int]) -> bytes:
+        """list of ints --> bytes object"""
+        bits = blocks_to_bits(ints, self.block_size)
+        # the 8s here are for grouping 8 bits into a byte
+        return bytes(int(bits[k:k + 8], 2) for k in range(0, len(bits), 8))
 
 
 def to_text(data: bytes, text_format: str) -> str:
@@ -26,8 +52,7 @@ def from_text(text: str, text_format: str) -> bytes:
 
 
 class CryptoStack:
-    """send: encode, block, encrypt each block, write as text.
-    receive: undo each step in reverse order."""
+    """encode, block, cipher OR decipher, deblock, decode"""
 
     def __init__(self, encoder: Encoder, block_size: int, cipher: Cipher,
                  text_format: str = "hex") -> None:
@@ -41,7 +66,6 @@ class CryptoStack:
         self.bytes_per_block = ((cipher.mod - 1).bit_length() + 7) // 8
 
     def encrypt(self, message: str, key) -> list[int]:
-        """message --> list of encrypted ints (the padding count is encrypted too)"""
         blocks = self.blocker.block(self.encoder.encode(message))
         return [self.cipher.encrypt(num, key) for num in blocks]
 

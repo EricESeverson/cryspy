@@ -2,7 +2,7 @@
 
 __version__ = "0.1.0"
 
-from .blocker import Blocker
 from .ciphers import AdditionCipher, Cipher
-from .encoders import CompressionEncoder, Encoder, TextEncoder
-from .stack import CryptoStack
+from .compression import CompressionEncoder
+from .encoders import Encoder, TextEncoder
+from .stack import Blocker, CryptoStack
