@@ -5,6 +5,7 @@ from .encoders import Encoder
 
 
 def bits_to_blocks(bits: str, block_size: int) -> list[int]:
+    """TODO"""
     padding_len = (-len(bits)) % block_size
     bits += "0" * padding_len
     # the int(..., 2) means reading off in base 2
@@ -14,12 +15,14 @@ def bits_to_blocks(bits: str, block_size: int) -> list[int]:
 
 
 def blocks_to_bits(ints: list[int], block_size: int) -> str:
+    """TODO"""
     padding_len = ints[0]
     bits = "".join(f"{num:0{block_size}b}" for num in ints[1:])
     return bits[:len(bits) - padding_len]
 
 
 class Blocker:
+    """TODO"""
     def __init__(self, block_size: int) -> None:
         self.block_size = block_size
 
@@ -50,6 +53,7 @@ class Blocker:
 
 
 def to_text(data: bytes, text_format: str) -> str:
+    """TODO"""
     if text_format == "hex":
         return data.hex()
     if text_format == "base64":
@@ -58,6 +62,7 @@ def to_text(data: bytes, text_format: str) -> str:
 
 
 def from_text(text: str, text_format: str) -> bytes:
+    """TODO"""
     if text_format == "hex":
         return bytes.fromhex(text)
     if text_format == "base64":
@@ -88,19 +93,23 @@ class CryptoStack:
         self.bytes_per_block = ((cipher.mod - 1).bit_length() + 7) // 8
 
     def encrypt(self, message: str, key) -> list[int]:
+        """TODO"""
         blocks = self.blocker.block(self.encoder.encode(message))
         return [self.cipher.encrypt(num, key) for num in blocks]
 
     def decrypt(self, ints: list[int], key) -> str:
+        """TODO"""
         decrypted = [self.cipher.decrypt(num, key) for num in ints]
         return self.encoder.decode(self.blocker.deblock(decrypted))
 
     def send(self, message: str, key) -> str:
+        """TODO"""
         ints = self.encrypt(message, key)
         data = b"".join(num.to_bytes(self.bytes_per_block, "big") for num in ints)
         return to_text(data, self.text_format)
 
     def receive(self, text: str, key) -> str:
+        """TODO"""
         data = from_text(text, self.text_format)
         n = self.bytes_per_block
         ints = [int.from_bytes(data[k:k + n], "big") for k in range(0, len(data), n)]
