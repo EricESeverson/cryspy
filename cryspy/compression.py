@@ -5,6 +5,19 @@ from .stack import bits_to_blocks, blocks_to_bits
 
 
 class CompressionEncoder(Encoder):
+    """Compress using LZ77 and huffman.
+
+    Given an alphabet and optionally letter weights, compresses
+    and decompresses from a string to a bit string or bytes with
+    on LZ77 + huffman encoding.
+
+    Args:
+        alphabet: string of valid characters.
+        letter_weights: counts or frequencies of each character
+            to create the huffman tree. If not supplied, assumes
+            a uniform distribution.
+    """
+
     def __init__(self, alphabet: str, letter_weights: dict[Hashable, float] | None = None) -> None:
         self.alphabet = alphabet
         if letter_weights is None:
@@ -12,6 +25,15 @@ class CompressionEncoder(Encoder):
         self.code = create_huffman_tree(letter_weights)
 
     def compress(self, message: str) -> str:
+        """Compress using LZ77 and huffman encoding.
+        
+        Args:
+            message: a string with each letter in `self.alphabet`.
+
+        Returns:
+            Compressed bitstring.
+        """
+
         for c in message:
             if c not in self.code:
                 raise ValueError(f"{c!r} is not in the alphabet")
@@ -19,25 +41,60 @@ class CompressionEncoder(Encoder):
         return LZ77_to_bits(LZ77_list, self.code)
 
     def decompress(self, bits: str) -> str:
+        """Decompress using LZ77 and huffman encoding.
+        
+        Args:
+            bits: bit string from `self.compress`.
+
+        Returns:
+            Decompressed message.
+        """
+
         LZ77_list = bits_to_LZ77(bits, self.code)
         return "".join(LZ77_decode(LZ77_list))
 
     def encode(self, message: str) -> bytes:
+        """Compress using LZ77 and huffman encoding, then encode into bytes.
+        
+        Args:
+            message: a string with each letter in `self.alphabet`.
+
+        Returns:
+            Compressed and encoded bytes.
+        """
+
         # same padding rule as Blocker, with 8-bit blocks
         return bytes(bits_to_blocks(self.compress(message), 8))
 
     def decode(self, data: bytes) -> str:
+        """Decode and decompress from bytes using LZ77 and huffman encoding.
+        
+        Args:
+            data: compressed bytes message from `self.encode`.
+
+        Returns:
+            Decoded and decompressed message.
+        """
+
         return self.decompress(blocks_to_bits(list(data), 8))
 
 
 class LZ77_Entry:
+    """An entry in an LZ77 table.
+
+    Args:
+        is_literal: whether the entry is a literal.
+        val: either a literal in the alphabet, or a tuple of two ints
+            representing a match clause.
+    """
+
     def __init__(self, is_literal: bool, val):
         self.is_literal = is_literal
         self.val = val
 
 
 def LZ77_encode(message: Sequence, code: dict[Hashable, str]) -> list[LZ77_Entry]:
-    """Compress message using LZ77. O(len(message)^3).
+    """Compress message using LZ77. O(len(message)^3). Inverse of `LZ77_decode`.
 
     Args:
         message: the symbols to compress.
@@ -78,9 +135,8 @@ def match_bits(i: int, d: int, m: int) -> int:
 
 
 def LZ77_decode(lst: list[LZ77_Entry]) -> list:
-    """Decompress lst using LZ77. O(len(message)).
+    """Decompress lst using LZ77. O(len(message)). Inverse of `LZ77_encode`.
 
-    LZ77_decode(LZ77_encode(message, code)) is list(message).
 
     Args:
         lst: the entries from LZ77_encode.
@@ -105,6 +161,21 @@ def LZ77_decode(lst: list[LZ77_Entry]) -> list:
 
 
 def LZ77_to_bits(LZ77_list: list[LZ77_Entry], code: dict[Hashable, str]) -> str:
+    """Encode an LZ77 list into a bit string. Inverse of `bits_to_LZ77`.
+
+    Each literal charater `c` in LZ77_list gets encoded as a `0` followed
+    by `code[c]`. Each match clause `(d, m)` after `i` decoded characters 
+    gets encoded as a `1`, followed by `d-1` written in binary with the same
+    number of bits as `i-1`, followed by `m` written with the Elias gamma code.
+
+    Args:
+        LZ77_list: the entries from LZ77_encode.
+        code: the huffman tree from create_huffman_tree.
+
+    Returns:
+        The bit string representing LZ77_list.
+    """
+
     bits = []
     i = 0  # how many symbols have been encoded so far
 
@@ -136,6 +207,15 @@ def _to_binary(n: int, width: int) -> str:
 
 
 def bits_to_LZ77(bits: str, code: dict[Hashable, str]) -> list[LZ77_Entry]:
+    """Decode a bit string into an LZ77 list. Inverse of `LZ77_to_bits`.
+
+    Args:
+        bits: the bit string of an encoded LZ77 list.
+        code: the huffman tree from create_huffman_tree.
+
+    Returns:
+        The LZ77 list from bits.
+    """
     letter_of = {code[c]: c for c in code}
     k = 0  # position in bits
     i = 0  # how many symbols have been decoded so far
@@ -230,6 +310,11 @@ def create_huffman_tree(letter_weights: dict[Hashable, float]) -> dict[Hashable,
 
 
 class MinHeap:
+    """Implements a min-heap with a binary indexed tree.
+
+    Insertion and popping are O(log n).
+    """
+
     def __init__(self) -> None:
         self.lst = []
         self.size = 0
@@ -238,11 +323,24 @@ class MinHeap:
         return self.size
 
     def _swap(self, a: int, b: int) -> None:
+        """Swaps two elements in the BIT
+
+        Args:
+            a: first index
+            b: second index
+        """
+
         temp = self.lst[a]
         self.lst[a] = self.lst[b]
         self.lst[b] = temp
 
     def insert(self, element) -> None:
+        """Inserts an element to the heap.
+
+        Args:
+            element: element to be inserted
+        """
+
         self.lst.append(element)
         cur = self.size
         self.size += 1
@@ -255,6 +353,15 @@ class MinHeap:
             cur = parent
 
     def pop(self):
+        """Removes and returns the least element in the heap.
+        
+        Returns:
+            The least element in the heap.
+
+        Raises:
+            IndexError if the heap is empty
+        """
+
         if self.size == 0:
             raise IndexError("Cannot pop from an empty heap")
 
