@@ -64,6 +64,7 @@ class CompressionEncoder(Encoder):
         """
 
         # same padding rule as Blocker, with 8-bit blocks
+        """TODO"""
         return bytes(bits_to_blocks(self.compress(message), 8))
 
     def decode(self, data: bytes) -> str:
@@ -131,6 +132,7 @@ def LZ77_encode(message: Sequence, code: dict[Hashable, str]) -> list[LZ77_Entry
 
 
 def match_bits(i: int, d: int, m: int) -> int:
+    """TODO"""
     return 1 + (i - 1).bit_length() + (2 * m.bit_length() - 1)
 
 
@@ -202,6 +204,7 @@ def LZ77_to_bits(LZ77_list: list[LZ77_Entry], code: dict[Hashable, str]) -> str:
 
 
 def _to_binary(n: int, width: int) -> str:
+    """TODO"""
     n_bitstr = bin(n)[2:]
     return ("0" * (width - len(n_bitstr))) + n_bitstr
 
