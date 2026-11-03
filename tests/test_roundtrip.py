@@ -9,6 +9,7 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
+from cryspy import candidates
 from cryspy import AdditionCipher, Blocker, CompressionEncoder, CryptoStack, TextEncoder
 from cryspy.compression import MinHeap
 
@@ -75,6 +76,52 @@ def test_mod_too_small():
     except ValueError:
         return
     raise AssertionError("expected a ValueError")
+
+
+def test_padding_count_not_encrypted():
+    stack = CryptoStack(TextEncoder(), 8, AdditionCipher(257))
+    ints = stack.encrypt("hello", 5)
+    assert ints[0] == stack.blocker.block(TextEncoder().encode("hello"))[0]
+
+
+def test_candidate_inverses():
+    rng = random.Random(3)
+    cases = [(7, 30), (3, 8), (5, 8), (11, 26), (17, 256), (65535, 2**16)]
+    cases += [(rng.getrandbits(512) | 1, 2**512) for _ in range(5)]
+    for n, mod in cases:
+        assert n * candidates.euclidean_inverse_1(mod, n) % mod == 1
+        assert n * candidates.multiplicative_inverse_2(n, mod) % mod == 1
+        assert n * candidates.inv_3(n, mod) % mod == 1
+        assert n * candidates.multi_inverse_4(n, mod) % mod == 1
+        assert n * candidates.inverse_5(n, mod) % mod == 1
+        assert n * candidates.better_inverse_6(n, mod) % mod == 1
+        assert n * candidates.find_inverse_7(n, mod) % mod in (1, mod - 1)
+    for n, mod in cases[:6]:
+        assert n * candidates.bash_multi_inverse_8(n, mod) % mod == 1
+
+
+def test_candidate_ciphers():
+    rng = random.Random(4)
+    for block_size in [8, 16, 64]:
+        mod = 2 ** block_size
+        a, b = rng.randrange(mod) | 1, rng.randrange(mod)
+        ciphers = [
+            (candidates.MultiplicationCipher1(mod, a), a),
+            (candidates.MultiplicationCipher2(mod), a),
+            (candidates.AffineCipher1(mod), (a, b)),
+            (candidates.AffineCipher3(mod, a, b), (a, b)),
+            (candidates.AffineCipher4(mod), (a, b)),
+            (candidates.AffineCipher5(mod, candidates.inv_3(a, mod)), (a, b)),
+        ]
+        if block_size <= 16:
+            ciphers.append((candidates.MultiplicationCipher3(mod), a))
+        loaded = candidates.AffineCipher2(mod)
+        loaded.load_key(a, b)
+        ciphers.append((loaded, None))
+        for cipher, key in ciphers:
+            stack = CryptoStack(TextEncoder(), block_size, cipher)
+            message = random_message(ALPHABET, rng, 30)
+            assert stack.receive(stack.send(message, key), key) == message
 
 
 if __name__ == "__main__":

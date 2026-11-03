@@ -88,12 +88,15 @@ class CryptoStack:
         self.bytes_per_block = ((cipher.mod - 1).bit_length() + 7) // 8
 
     def encrypt(self, message: str, key) -> list[int]:
-        blocks = self.blocker.block(self.encoder.encode(message))
-        return [self.cipher.encrypt(num, key) for num in blocks]
+        padding_len, *blocks = self.blocker.block(self.encoder.encode(message))
+        # the padding count goes out unencrypted: it is one of only
+        # block_size values, so encrypting it gives away a plaintext block
+        return [padding_len] + [self.cipher.encrypt(num, key) for num in blocks]
 
     def decrypt(self, ints: list[int], key) -> str:
-        decrypted = [self.cipher.decrypt(num, key) for num in ints]
-        return self.encoder.decode(self.blocker.deblock(decrypted))
+        padding_len, *blocks = ints
+        decrypted = [self.cipher.decrypt(num, key) for num in blocks]
+        return self.encoder.decode(self.blocker.deblock([padding_len] + decrypted))
 
     def send(self, message: str, key) -> str:
         ints = self.encrypt(message, key)

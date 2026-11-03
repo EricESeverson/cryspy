@@ -6,3 +6,4 @@ from .ciphers import AdditionCipher, Cipher
 from .compression import CompressionEncoder
 from .encoders import Encoder, TextEncoder
 from .stack import Blocker, CryptoStack
+from . import candidates
