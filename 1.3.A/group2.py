@@ -3,3 +3,6 @@ import cryspy as cp
 
 def hi_test():
     return "This is a github test. Hello from Lily"
+
+def idk():
+    return "jgong idk"
