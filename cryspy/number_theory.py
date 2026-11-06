@@ -21,19 +21,20 @@ def mult_inverse(a, n):
     if gy != 1: raise ValueError(f"gcd(n, a) = {gy} != 1")
     return gx % n
 
+
 def exp(a: int, b: int, n: int) -> int:
     """Power function - TODO"""
 
-    binary = bin(b)[3:][::-1]
-    total = a
+    binary = bin(b)[2:]
+    cur = 1
 
-    for b in binary:
-      if b == '0':
-        total = (total * total) % n 
-      elif b == '1': 
-        total = (total * total * a) % n      
+    for char in binary:
+        cur = (cur * cur)%n
+        if char == '1':
+            cur = (cur*a) % n
 
     return cur
+
 
 def factor(n: int) -> dict[int, int]:
     """Factor function - TODO"""
@@ -54,6 +55,7 @@ def factor(n: int) -> dict[int, int]:
 
     return factors
 
+
 def totient(n: int) -> int:
   """Euler's totient function
 
@@ -73,11 +75,11 @@ def totient(n: int) -> int:
       total *= n_fact**exp - n_fact**(exp-1)
   return total
 
+
 def is_prime(n: int) -> bool:
     """Prime function - placeholder"""
     
     if n < 2:
         return False
     return len(factor(n)) == 1
-
 
