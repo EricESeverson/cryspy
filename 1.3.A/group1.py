@@ -27,12 +27,32 @@ def fast_exp(a: int, p: int, n: int) -> int:
     """Returns a ** p mod n faster"""
     return a ** p mod n
 
+class ExponentiationCipher:
+   def __init__(self, mod: int) -> None:
+       self.mod = mod
 
-def ExponentiationCipher:
-    """return m ** k mod n"""
-    pass
 
-def PowerCipher:
-    """return k ** m mod n"""
-    pass
+   def encrypt(self, num: int, key: int) -> int:
+       return fast_exp(key, num, self.mod)
+
+
+   def decrypt(self, num: int, key: int) -> int:
+       for i in range(self.mod):
+           if fast_exp(key, i, self.mod) == num:
+               return i
+
+
+class PowerCipher:
+   def __init__(self, mod: int) -> None:
+       self.mod = mod
+
+
+   def encrypt(self, num: int, key: int) -> int:
+       return fast_exp(num, key, self.mod)
+
+
+   def decrypt(self, num: int, key: int) -> int:
+       for i in range(self.mod):
+           if fast_exp(i, key, self.mod) == num:
+               return i
 
