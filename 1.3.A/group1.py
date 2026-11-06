@@ -12,9 +12,16 @@ def prime_factorize(n ) --> dict: # key = prime, value = exp
 	pass
 
 
-def find_primative_root(n: int) --> int:
-    """returns a primative root of n"""
-    pass
+def is_primative_root(g: int, p: int) -> bool:
+    """Sees if the set r^k| 0<k<n is the same as {1, …, n-1}"""
+    reached = [False]*p
+    for i in range(0, p-1):
+        val = fast_exp(g, i, p)
+        if reached[val]:
+            return False
+        reached[val] = True
+    return True
+
 
 def find_all_primative_roots(n: int, p: int) --> int:
     """returns list of primitives roots of n"""
