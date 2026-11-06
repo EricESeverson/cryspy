@@ -9,7 +9,8 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from cryspy import AdditionCipher, Blocker, CompressionEncoder, CryptoStack, TextEncoder
+from cryspy import AdditionCipher, AffineCipher, Blocker, CompressionEncoder, CryptoStack, TextEncoder, gcd, mult_inverse, vgcd
+import math
 from cryspy.compression import MinHeap
 
 ALPHABET = "_ABCDEFGHIJKLMNOPQRSTUVWXYZ.-/"
@@ -75,6 +76,75 @@ def test_mod_too_small():
     except ValueError:
         return
     raise AssertionError("expected a ValueError")
+
+
+def test_number_theory():
+    rng = random.Random(3)
+    for bits in [4, 8, 64, 512]:
+        for _ in range(200):
+            n = rng.randrange(2, 2 ** bits)
+            a = rng.randrange(0, n)
+            assert gcd(n, a) == math.gcd(n, a)
+            gx, gy = vgcd((0, n), (1, a))
+            assert gy == math.gcd(n, a) and (gx * a - gy) % n == 0
+            if gy == 1:
+                assert mult_inverse(a, n) == pow(a, -1, n)
+            else:
+                try:
+                    mult_inverse(a, n)
+                except ValueError:
+                    continue
+                raise AssertionError("expected a ValueError")
+
+
+def test_padding():
+    # the padding count is sent in the clear; the padding bits are random
+    stack = CryptoStack(TextEncoder(), 64, AdditionCipher(2 ** 64))
+    message = "hi"  # 16 bits, so 48 padding bits
+    first = stack.encrypt(message, 5)
+    assert first[0] == 48
+    assert any(stack.encrypt(message, 5)[-1] != first[-1] for _ in range(5))
+    assert stack.decrypt(first, 5) == message
+
+
+def test_affine():
+    rng = random.Random(4)
+    for mod in [256, 257, 2 ** 64, 2 ** 512]:
+        cipher = AffineCipher(mod)
+        for _ in range(50):
+            a = rng.randrange(1, mod)
+            if math.gcd(a, mod) != 1:
+                try:
+                    cipher.encrypt(5, (a, 3))
+                except ValueError:
+                    continue
+                raise AssertionError("expected a ValueError")
+            b, num = rng.randrange(mod), rng.randrange(mod)
+            assert cipher.encrypt(num, (a, b)) == (a * num + b) % mod
+            assert cipher.decrypt(cipher.encrypt(num, (a, b)), (a, b)) == num
+    stack = CryptoStack(TextEncoder(), 64, AffineCipher(2 ** 64))
+    key = (rng.randrange(2 ** 64) | 1, rng.randrange(2 ** 64))
+    for _ in range(20):
+        message = random_message(ALPHABET, rng, rng.randrange(0, 40))
+        assert stack.receive(stack.send(message, key), key) == message
+
+
+def test_alphabet_sequence():
+    # an alphabet is any sequence of hashable symbols, not just a string
+    rng = random.Random(5)
+    enc = CompressionEncoder(bytes(range(256)))
+    for _ in range(50):
+        data = bytes(rng.randrange(256) for _ in range(rng.randrange(0, 60)))
+        assert enc.decode(enc.encode(data)) == data
+    data = "héllo 🔐 héllo 🔐".encode()
+    assert enc.decode(enc.encode(data)) == data
+    words = ["the", "cat", "sat", "on", "mat", "_"]
+    enc = CompressionEncoder(words, {"the": 5, "cat": 2, "sat": 2, "on": 2, "mat": 1, "_": 6})
+    for _ in range(50):
+        message = rng.choices(words, k=rng.randrange(1, 40))
+        assert enc.decode(enc.encode(message)) == message
+    stack = CryptoStack(CompressionEncoder(bytes(range(256))), 16, AffineCipher(2 ** 16))
+    assert stack.receive(stack.send(data, (3, 7)), (3, 7)) == data
 
 
 if __name__ == "__main__":
