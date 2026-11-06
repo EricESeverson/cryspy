@@ -2,7 +2,13 @@
 import cryspy as cp
 
 def is_prime(n: int) -> bool:
+    """checks if number is prime"""
     return None
+
+def prime_factorize(n ) --> dict: # key = prime, value = exp
+    """returns prime factorization as dict"""
+	pass
+
 
 def find_primative_root(n: int) --> int:
     """returns a primative root of n"""
