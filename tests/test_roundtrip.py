@@ -9,7 +9,8 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from cryspy import AdditionCipher, Blocker, CompressionEncoder, CryptoStack, TextEncoder
+from cryspy import AdditionCipher, Blocker, CompressionEncoder, CryptoStack, TextEncoder, gcd, mult_inverse, vgcd
+import math
 from cryspy.compression import MinHeap
 
 ALPHABET = "_ABCDEFGHIJKLMNOPQRSTUVWXYZ.-/"
@@ -75,6 +76,25 @@ def test_mod_too_small():
     except ValueError:
         return
     raise AssertionError("expected a ValueError")
+
+
+def test_number_theory():
+    rng = random.Random(3)
+    for bits in [4, 8, 64, 512]:
+        for _ in range(200):
+            n = rng.randrange(2, 2 ** bits)
+            a = rng.randrange(0, n)
+            assert gcd(n, a) == math.gcd(n, a)
+            gx, gy = vgcd((0, n), (1, a))
+            assert gy == math.gcd(n, a) and (gx * a - gy) % n == 0
+            if gy == 1:
+                assert mult_inverse(a, n) == pow(a, -1, n)
+            else:
+                try:
+                    mult_inverse(a, n)
+                except ValueError:
+                    continue
+                raise AssertionError("expected a ValueError")
 
 
 if __name__ == "__main__":

@@ -5,4 +5,5 @@ __version__ = "0.1.0"
 from .ciphers import AdditionCipher, Cipher
 from .compression import CompressionEncoder
 from .encoders import Encoder, TextEncoder
+from .number_theory import gcd, mult_inverse, vgcd
 from .stack import Blocker, CryptoStack
