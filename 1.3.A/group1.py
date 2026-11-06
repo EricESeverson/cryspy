@@ -1,9 +1,11 @@
 # 1.3.A Group 1
 import cryspy as cp
 
-def is_prime(n: int) -> bool:
-    """checks if number is prime"""
-    return None
+def is_prime(n) -> bool:
+    for i in range(2, int(n**0.5+1)):
+        if (n%i == 0):
+            return False
+    return True
 
 def prime_factorize(n ) --> dict: # key = prime, value = exp
     """returns prime factorization as dict"""
