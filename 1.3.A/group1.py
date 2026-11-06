@@ -8,6 +8,10 @@ def find_primative_root(n: int) --> int:
     """returns a primative root of n"""
     pass
 
+def find_all_primative_roots(n: int, p: int) --> int:
+    """returns list of primitives roots of n"""
+    pass
+
 def slow_exp(a: int, p: int, n: int) -> int:
     """Returns a ** p mod n"""
     return a ** p mod n
