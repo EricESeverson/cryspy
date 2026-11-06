@@ -129,6 +129,24 @@ def test_affine():
         assert stack.receive(stack.send(message, key), key) == message
 
 
+def test_alphabet_sequence():
+    # an alphabet is any sequence of hashable symbols, not just a string
+    rng = random.Random(5)
+    enc = CompressionEncoder(bytes(range(256)))
+    for _ in range(50):
+        data = bytes(rng.randrange(256) for _ in range(rng.randrange(0, 60)))
+        assert enc.decode(enc.encode(data)) == data
+    data = "héllo 🔐 héllo 🔐".encode()
+    assert enc.decode(enc.encode(data)) == data
+    words = ["the", "cat", "sat", "on", "mat", "_"]
+    enc = CompressionEncoder(words, {"the": 5, "cat": 2, "sat": 2, "on": 2, "mat": 1, "_": 6})
+    for _ in range(50):
+        message = rng.choices(words, k=rng.randrange(1, 40))
+        assert enc.decode(enc.encode(message)) == message
+    stack = CryptoStack(CompressionEncoder(bytes(range(256))), 16, AffineCipher(2 ** 16))
+    assert stack.receive(stack.send(data, (3, 7)), (3, 7)) == data
+
+
 if __name__ == "__main__":
     for name, test in list(globals().items()):
         if name.startswith("test_"):

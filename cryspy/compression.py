@@ -12,19 +12,20 @@ class CompressionEncoder(Encoder):
     LZ77 + huffman encoding.
 
     Args:
-        alphabet: string of valid characters.
+        alphabet: a sequence of hashable symbols. A string of
+            characters works.
         letter_weights: counts or frequencies of each character
             to create the huffman tree. If not supplied, assumes
             a uniform distribution.
     """
 
-    def __init__(self, alphabet: str, letter_weights: dict[Hashable, float] | None = None) -> None:
+    def __init__(self, alphabet: Sequence[Hashable], letter_weights: dict[Hashable, float] | None = None) -> None:
         self.alphabet = alphabet
         if letter_weights is None:
             letter_weights = {c: 1 for c in alphabet}
         self.code = create_huffman_tree(letter_weights)
 
-    def compress(self, message: str) -> str:
+    def compress(self, message: Sequence) -> str:
         """Compress using LZ77 and huffman encoding.
         
         Args:
@@ -40,7 +41,7 @@ class CompressionEncoder(Encoder):
         LZ77_list = LZ77_encode(message, self.code)
         return LZ77_to_bits(LZ77_list, self.code)
 
-    def decompress(self, bits: str) -> str:
+    def decompress(self, bits: str) -> Sequence:
         """Decompress using LZ77 and huffman encoding.
         
         Args:
@@ -51,9 +52,15 @@ class CompressionEncoder(Encoder):
         """
 
         LZ77_list = bits_to_LZ77(bits, self.code)
-        return "".join(LZ77_decode(LZ77_list))
+        symbols = LZ77_decode(LZ77_list)
+        # give back the same kind of sequence as the alphabet
+        if isinstance(self.alphabet, str):
+            return "".join(symbols)
+        if isinstance(self.alphabet, (bytes, bytearray)):
+            return bytes(symbols)
+        return symbols
 
-    def encode(self, message: str) -> bytes:
+    def encode(self, message: Sequence) -> bytes:
         """Compress using LZ77 and huffman encoding, then encode into bytes.
         
         Args:
@@ -64,7 +71,6 @@ class CompressionEncoder(Encoder):
         """
 
         # same padding rule as Blocker, with 8-bit blocks
-        """TODO"""
         return bytes(bits_to_blocks(self.compress(message), 8))
 
     def decode(self, data: bytes) -> str:
