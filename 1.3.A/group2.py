@@ -39,6 +39,13 @@ def prime_factor(n):
     for test_div in range(2, n + 1):
         if n % test_div == 0:
             i = 1
+
+def totient(n):
+    prime_factors = prime_factor(n)
+    res = 1
+    for factor in prime_factors:
+        res *= factor[0] ** (factor[1] - 1) * (factor[0] - 1)
+    return res
             while n % (test_div ** (i + 1)) == 0:
                 i += 1
             return [(test_div, i)] + prime_factor(n // (test_div ** i))
