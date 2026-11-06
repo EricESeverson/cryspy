@@ -1,4 +1,5 @@
 import base64
+import secrets
 
 from .ciphers import Cipher
 from .encoders import Encoder
@@ -7,7 +8,9 @@ from .encoders import Encoder
 def bits_to_blocks(bits: str, block_size: int) -> list[int]:
     """TODO"""
     padding_len = (-len(bits)) % block_size
-    bits += "0" * padding_len
+    # random padding bits, not zeros: zeros would be known plaintext
+    if padding_len:
+        bits += f"{secrets.randbits(padding_len):0{padding_len}b}"
     # the int(..., 2) means reading off in base 2
     blocks = [int(bits[k:k + block_size], 2)
               for k in range(0, len(bits), block_size)]
@@ -94,13 +97,16 @@ class CryptoStack:
 
     def encrypt(self, message: str, key) -> list[int]:
         """TODO"""
-        blocks = self.blocker.block(self.encoder.encode(message))
-        return [self.cipher.encrypt(num, key) for num in blocks]
+        padding_len, *blocks = self.blocker.block(self.encoder.encode(message))
+        # the padding count goes out unencrypted: it is one of only
+        # block_size values, so encrypting it gives away a plaintext block
+        return [padding_len] + [self.cipher.encrypt(num, key) for num in blocks]
 
     def decrypt(self, ints: list[int], key) -> str:
         """TODO"""
-        decrypted = [self.cipher.decrypt(num, key) for num in ints]
-        return self.encoder.decode(self.blocker.deblock(decrypted))
+        padding_len, *blocks = ints
+        decrypted = [self.cipher.decrypt(num, key) for num in blocks]
+        return self.encoder.decode(self.blocker.deblock([padding_len] + decrypted))
 
     def send(self, message: str, key) -> str:
         """TODO"""

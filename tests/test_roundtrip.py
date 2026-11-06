@@ -97,6 +97,16 @@ def test_number_theory():
                 raise AssertionError("expected a ValueError")
 
 
+def test_padding():
+    # the padding count is sent in the clear; the padding bits are random
+    stack = CryptoStack(TextEncoder(), 64, AdditionCipher(2 ** 64))
+    message = "hi"  # 16 bits, so 48 padding bits
+    first = stack.encrypt(message, 5)
+    assert first[0] == 48
+    assert any(stack.encrypt(message, 5)[-1] != first[-1] for _ in range(5))
+    assert stack.decrypt(first, 5) == message
+
+
 if __name__ == "__main__":
     for name, test in list(globals().items()):
         if name.startswith("test_"):
