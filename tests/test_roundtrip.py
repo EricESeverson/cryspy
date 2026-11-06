@@ -9,7 +9,7 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from cryspy import AdditionCipher, Blocker, CompressionEncoder, CryptoStack, TextEncoder, gcd, mult_inverse, vgcd
+from cryspy import AdditionCipher, AffineCipher, Blocker, CompressionEncoder, CryptoStack, TextEncoder, gcd, mult_inverse, vgcd
 import math
 from cryspy.compression import MinHeap
 
@@ -105,6 +105,28 @@ def test_padding():
     assert first[0] == 48
     assert any(stack.encrypt(message, 5)[-1] != first[-1] for _ in range(5))
     assert stack.decrypt(first, 5) == message
+
+
+def test_affine():
+    rng = random.Random(4)
+    for mod in [256, 257, 2 ** 64, 2 ** 512]:
+        cipher = AffineCipher(mod)
+        for _ in range(50):
+            a = rng.randrange(1, mod)
+            if math.gcd(a, mod) != 1:
+                try:
+                    cipher.encrypt(5, (a, 3))
+                except ValueError:
+                    continue
+                raise AssertionError("expected a ValueError")
+            b, num = rng.randrange(mod), rng.randrange(mod)
+            assert cipher.encrypt(num, (a, b)) == (a * num + b) % mod
+            assert cipher.decrypt(cipher.encrypt(num, (a, b)), (a, b)) == num
+    stack = CryptoStack(TextEncoder(), 64, AffineCipher(2 ** 64))
+    key = (rng.randrange(2 ** 64) | 1, rng.randrange(2 ** 64))
+    for _ in range(20):
+        message = random_message(ALPHABET, rng, rng.randrange(0, 40))
+        assert stack.receive(stack.send(message, key), key) == message
 
 
 if __name__ == "__main__":
