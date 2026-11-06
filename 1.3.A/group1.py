@@ -18,14 +18,25 @@ def find_all_primative_roots(n: int, p: int) --> int:
     """returns list of primitives roots of n"""
     pass
 
-def slow_exp(a: int, p: int, n: int) -> int:
-    """Returns a ** p mod n"""
-    return a ** p mod n
-
-
 def fast_exp(a: int, p: int, n: int) -> int:
-    """Returns a ** p mod n faster"""
-    return a ** p mod n
+    """Find a ** p mod n.
+
+    Args:
+        a: base of exponentiation
+        p: power
+        n: modulo
+
+    Returns:
+        (a ** p) mod n.
+
+    """
+    out = 1
+    for d in bin(p)[2:]:
+        out *= out
+        if (d == "1"):
+            out *= a
+        out %= n
+    return out
 
 class ExponentiationCipher:
    def __init__(self, mod: int) -> None:
