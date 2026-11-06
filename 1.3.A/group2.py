@@ -13,3 +13,19 @@ def exp(a, b, m):
         # calculate a ** (2 ** i)
         a_raised_to_power_of_two = a_raised_to_power_of_two ** 2 % m
     return res
+
+def is_prime(n: int) -> bool:
+    """
+    Returns true if n is prime and false otherwise
+    """
+    return len(factors(n)) == 1
+
+def factors(n: int) -> list[int]:
+    """
+    Returns a list of the factors of n
+    """
+    divisors = []
+    for i in range(1, n):
+        if n%i == 0:
+            divisors.append(i)
+    return divisors
