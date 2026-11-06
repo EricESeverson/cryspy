@@ -29,3 +29,13 @@ def factors(n: int) -> list[int]:
         if n%i == 0:
             divisors.append(i)
     return divisors
+
+def prime_factor(n):
+    """
+    Returns a list of the prime factors of n, counting multiplicity
+    """
+    if (n == 1):
+        return []
+    for test_div in range(2, n + 1):
+        if n % test_div == 0:
+            return [test_div] + prime_factor(n // test_div)
