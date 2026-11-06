@@ -39,7 +39,7 @@ def factor(n: int) -> dict[int, int]:
     """Factor function - TODO"""
     
     factors = {}
-    def = 2
+    d = 2
 
     while d ** 2 <= n:
         while n % d == 0:
@@ -64,6 +64,7 @@ def totient(n: int) -> int:
     Value of totient function on n
 
   """
+    
   total = 1
   for n_fact, exp in factor(n).items():
     if exp == 1:
