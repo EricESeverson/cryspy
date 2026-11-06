@@ -32,10 +32,13 @@ def factors(n: int) -> list[int]:
 
 def prime_factor(n):
     """
-    Returns a list of the prime factors of n, counting multiplicity
+    returns a list of tuples of (prime, prime-adic valuation of n)
     """
     if (n == 1):
         return []
     for test_div in range(2, n + 1):
         if n % test_div == 0:
-            return [test_div] + prime_factor(n // test_div)
+            i = 1
+            while n % (test_div ** (i + 1)) == 0:
+                i += 1
+            return [(test_div, i)] + prime_factor(n // (test_div ** i))
