@@ -9,7 +9,7 @@ class CompressionEncoder(Encoder):
 
     Given an alphabet and optionally letter weights, compresses
     and decompresses from a string to a bit string or bytes with
-    on LZ77 + huffman encoding.
+    LZ77 + huffman encoding.
 
     Args:
         alphabet: string of valid characters.
@@ -139,7 +139,6 @@ def match_bits(i: int, d: int, m: int) -> int:
 def LZ77_decode(lst: list[LZ77_Entry]) -> list:
     """Decompress lst using LZ77. O(len(message)). Inverse of `LZ77_encode`.
 
-
     Args:
         lst: the entries from LZ77_encode.
 
@@ -165,7 +164,7 @@ def LZ77_decode(lst: list[LZ77_Entry]) -> list:
 def LZ77_to_bits(LZ77_list: list[LZ77_Entry], code: dict[Hashable, str]) -> str:
     """Encode an LZ77 list into a bit string. Inverse of `bits_to_LZ77`.
 
-    Each literal charater `c` in LZ77_list gets encoded as a `0` followed
+    Each literal character `c` in LZ77_list gets encoded as a `0` followed
     by `code[c]`. Each match clause `(d, m)` after `i` decoded characters 
     gets encoded as a `1`, followed by `d-1` written in binary with the same
     number of bits as `i-1`, followed by `m` written with the Elias gamma code.
