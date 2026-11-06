@@ -4,6 +4,10 @@ import cryspy as cp
 def is_prime(n: int) -> bool:
     return None
 
+def find_primative_root(n: int) --> int:
+    """returns a primative root of n"""
+    pass
+
 def slow_exp(a: int, p: int, n: int) -> int:
     """Returns a ** p mod n"""
     return a ** p mod n
