@@ -9,7 +9,7 @@ def is_prime(n) -> bool:
 
 def prime_factorize(n ) -> dict: # key = prime, value = exp
     """returns prime factorization as dict"""
-	pass
+    pass
 
 
 def is_primative_root(g: int, p: int) -> bool:
