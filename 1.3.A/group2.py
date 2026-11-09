@@ -75,3 +75,24 @@ def is_gen(g: int, p: int) -> bool:
         if pow(g, (p - 1) // factor[0], p) == 1:
             return False
     return True
+
+def find_gens(p: int) -> list[int]:
+    """
+    Returns a list of multiplicative generators 
+    (primitive roots) within Z mod p
+    """
+    # finding first generator
+    gen = 0
+    for i in range(1, p):
+        if is_gen(i, p):
+            gen = i
+            break
+
+    # finding all of p's coprimes
+    coprimes = [1]
+    for i in range(2, p-1):
+        if cp.gcd(i, p-1) == 1:
+            coprimes.append(i)
+
+    # this produces the rest of the primitive roots
+    return [gen ** i % p for i in coprimes]
