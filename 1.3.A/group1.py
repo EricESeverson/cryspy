@@ -7,7 +7,7 @@ def is_prime(n) -> bool:
             return False
     return True
 
-def prime_factorize(n ) --> dict: # key = prime, value = exp
+def prime_factorize(n ) -> dict: # key = prime, value = exp
     """returns prime factorization as dict"""
 	pass
 
