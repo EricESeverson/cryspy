@@ -49,3 +49,17 @@ def totient(n):
     for factor in prime_factors:
         res *= factor[0] ** (factor[1] - 1) * (factor[0] - 1)
     return res
+
+def is_gen(g: int, p: int) -> bool:
+    """
+    returns true iff g is a generator mod p
+    """
+    if not is_prime(p):
+        return False
+    # check g to the power of all divisors of the totient (which will be p-1)
+    factors = prime_factor(p-1)
+    for factor in factors:
+        # we check g ** ((p-1) / each prime function)
+        if pow(g, (p - 1) // factor[0], p) == 1:
+            return False
+    return True
