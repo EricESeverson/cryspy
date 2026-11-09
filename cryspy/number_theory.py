@@ -77,9 +77,44 @@ def totient(n: int) -> int:
 
 
 def is_prime(n: int) -> bool:
-    """Prime function - placeholder"""
+    """Prime function - TODO"""
     
     if n < 2:
         return False
-    return len(factor(n)) == 1
+    factored = factor(n)
+    return len(factored) == 1 and list(factored.values())[0] == 1
+
+
+def next_prime(n: int) -> int:
+    """TODO"""
+    
+    while not is_prime(n):
+        n += 1
+        
+    return n
+
+
+def is_gen(g: int, p: int) -> bool:
+    """TODO"""
+    
+    powers = set()
+    cur = 1
+    
+    for i in range(p-1):
+        cur = (cur * g) % p
+        powers.add(cur)
+        
+    return len(powers) == p-1
+
+
+def find_gen(p: int) -> int | None:
+    """TODO"""
+    
+    if not is_prime(p):
+        return
+        
+    for i in range(1, p):
+        if is_gen(i, p):
+            return i
+            
 
