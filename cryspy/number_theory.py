@@ -2,7 +2,15 @@
 
 
 def gcd(a, b):
-    """TODO"""
+    """GCD
+
+    Args:
+      a (int), b (int): input integers
+  
+    Returns:
+      Value of gcd(a,b)
+
+    """
     if b == 0: return a
     return gcd(b, a % b)
 
