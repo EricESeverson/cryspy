@@ -19,6 +19,16 @@ def factorize(n) -> dict[int, int]: # key = prime, value = exp
         out = {n: 1}
     return out
 
+def fast_totient(factorization: dict[int, int]) -> int:
+    """
+    takes in dictionary of prime factors and powers
+    returns totient value of n
+    """
+    
+    product = 1
+    for prime, exp in factorization.items():
+        product *= (prime ** (exp-1)) * (prime-1)
+    return product
 
 def slow_is_gen(g: int, p: int) -> bool:
     """Sees if the set r^k| 0<k<n is the same as {1, …, n-1}"""
