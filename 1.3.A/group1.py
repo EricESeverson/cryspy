@@ -1,25 +1,29 @@
 # 1.3.A Group 1
 import cryspy as cp
 
-def is_prime(n) -> bool:
-    for i in range(2, int(n**0.5+1)):
-        if (n%i == 0):
+from collections.abc import Iterator
+from itertools import product
+
+def is_prime(n: int) -> bool:
+    if (n <= 1):
+        return False
+
+    i = 2
+    while (i * i) <= n:
+        if (n%i) == 0:
             return False
+        i += 1
+
     return True
 
-def factorize(n) -> dict[int, int]: # key = prime, value = exp
-    out = {}
-    div = 2
-    while (div <= int(n**0.5+1)):
-        while (n%div == 0):
-            if(out.get(div) == None):
-                out[div] = 0
-            out[div]+=1
-            n /= div
-        div +=1
-    if (n > 1):
-        out[int(n)] = 1
-    return out
+
+def next_prime(n: int) -> bool:
+    while True:
+        if is_prime(n):
+            return n
+
+        n += 1
+
 
 def totient(factorization: dict[int, int]) -> int:
     """
@@ -32,40 +36,45 @@ def totient(factorization: dict[int, int]) -> int:
         product *= (prime ** (exp-1)) * (prime-1)
     return product
 
-def slow_is_gen(g: int, p: int) -> bool:
-    """Sees if the set r^k| 0<k<n is the same as {1, …, n-1}"""
-    reached = [False]*p
-    for i in range(0, p-1):
-        val = fast_exp(g, i, p)
-        if reached[val]:
+
+def factorize(n: int) -> dict[int, int]:
+    factors = {}
+
+    i = 2
+    while n > 1:
+        if (n%i) == 0:
+            factors[i] = 0
+            while (n%i) == 0:
+                factors[i] += 1
+                n //= i
+
+        i += 1
+
+    return factors
+            
+
+def factors(n: int) -> Iterator[int]:
+    factors = list(factorize(n).items())
+    iterators = [range(e+1) for p, e in factors]
+
+    for exponents in product(*iterators):
+        out = 1
+        for i in range(len(factors)):
+            out *= factors[i][0] ** exponents[i]
+        
+        yield out
+
+
+def is_gen(g: int, p: int) -> bool:
+    for f in factors(p-1):
+        if f == (p-1):
+            continue
+
+        if pow(g, f, p) == 1:
             return False
-        reached[val] = True
-    return True
+    
+    return pow(g, p-1, p) == 1
 
-
-def find_all_primative_roots(n: int, p: int) -> int:
-    """returns list of primitives roots of n"""
-    pass
-
-def fast_exp(a: int, p: int, n: int) -> int:
-    """Find a ** p mod n.
-
-    Args:
-        a: base of exponentiation
-        p: power
-        n: modulo
-
-    Returns:
-        (a ** p) mod n.
-
-    """
-    out = 1
-    for d in bin(p)[2:]:
-        out *= out
-        if (d == "1"):
-            out *= a
-        out %= n
-    return out
 
 class ExponentiationCipher:
    def __init__(self, mod: int) -> None:
