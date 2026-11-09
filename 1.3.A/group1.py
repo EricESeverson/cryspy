@@ -9,14 +9,16 @@ def is_prime(n) -> bool:
 
 def factorize(n) -> dict[int, int]: # key = prime, value = exp
     out = {}
-    for div in range(2, int(n**0.5 +1)):
+    div = 2
+    while (div <= int(n**0.5+1)):
         while (n%div == 0):
             if(out.get(div) == None):
                 out[div] = 0
             out[div]+=1
             n /= div
-    if not out:
-        out = {n: 1}
+        div +=1
+    if (n > 1):
+        out[int(n)] = 1
     return out
 
 def fast_totient(factorization: dict[int, int]) -> int:
