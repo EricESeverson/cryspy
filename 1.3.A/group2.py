@@ -1,5 +1,6 @@
 # 1.3.A Group 2
 import cryspy as cp
+import math
 
 def exp(a: int, b: int, m: int) -> int:
     '''
@@ -14,11 +15,18 @@ def exp(a: int, b: int, m: int) -> int:
         a_raised_to_power_of_two = a_raised_to_power_of_two ** 2 % m
     return res
 
-def is_prime(n: int) -> bool:
+def is_prime(n):
     """
-    Returns true if n is prime and false otherwise
+    returns true iff n is prime
     """
-    return len(factors(n)) == 1
+    # trial division up to sqrt(n), only by 1 or -1 mod 6
+    if n == 2 or n == 3:
+        return True
+    
+    for i in range(math.floor(n ** 0.5) // 6):
+        if n % (6 * i - 1) == 0 or n % (6 * i + 1) == 0:
+            return False
+    return True
 
 def factors(n: int) -> list[int]:
     """
