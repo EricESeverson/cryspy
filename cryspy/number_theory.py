@@ -16,7 +16,18 @@ def gcd(a, b):
 
 
 def vgcd(u, v):
-    """TODO"""
+    """Vector gcd
+
+    Args: 
+        u (tuple): first input vector
+        v (tuple): second
+
+    Returns:
+        Vector gcd of u and v
+    
+
+    
+    """
     if v[1] == 0: return u
     q, r = divmod(u[1], v[1])
     w = (u[0] - q*v[0], r)    # w = u - q v
@@ -102,17 +113,19 @@ def next_prime(n: int) -> int:
     return n
 
 
-def is_gen(g: int, p: int) -> bool:
+def is_gen(k: int,m:int ): -> boolean
     """TODO"""
-    
-    powers = set()
-    cur = 1
-    
-    for i in range(p-1):
-        cur = (cur * g) % p
-        powers.add(cur)
-        
-    return len(powers) == p-1
+
+    if not is_prime(m):
+        return False
+
+    factorization = factor(m-1)
+
+    for p in factorization.keys():
+        if pow(k,(m-1)//p, m) == 1:
+            return False
+
+    return True
 
 
 def find_gen(p: int) -> int | None:
