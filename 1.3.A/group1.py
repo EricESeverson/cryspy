@@ -21,7 +21,7 @@ def factorize(n) -> dict[int, int]: # key = prime, value = exp
         out[int(n)] = 1
     return out
 
-def fast_totient(factorization: dict[int, int]) -> int:
+def totient(factorization: dict[int, int]) -> int:
     """
     takes in dictionary of prime factors and powers
     returns totient value of n
