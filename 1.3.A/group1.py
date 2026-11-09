@@ -7,9 +7,17 @@ def is_prime(n) -> bool:
             return False
     return True
 
-def prime_factorize(n ) -> dict: # key = prime, value = exp
-    """returns prime factorization as dict"""
-    pass
+def factorize(n) -> dict[int, int]: # key = prime, value = exp
+    out = {}
+    for div in range(2, int(n**0.5 +1)):
+        while (n%div == 0):
+            if(out.get(div) == None):
+                out[div] = 0
+            out[div]+=1
+            n /= div
+    if not out:
+        out = {n: 1}
+    return out
 
 
 def slow_is_gen(g: int, p: int) -> bool:
