@@ -1,7 +1,7 @@
 # 1.3.A Group 2
 import cryspy as cp
 
-def exp(a, b, m):
+def exp(a: int, b: int, m: int) -> int:
     '''
     returns a ** b mod m
     '''
@@ -30,7 +30,7 @@ def factors(n: int) -> list[int]:
             divisors.append(i)
     return divisors
 
-def prime_factor(n):
+def prime_factor(n: int) -> list[list[int, int]]:
     """
     returns a list of tuples of (prime, prime-adic valuation of n)
     """
@@ -43,7 +43,7 @@ def prime_factor(n):
                 i += 1
             return [(test_div, i)] + prime_factor(n // (test_div ** i))
 
-def totient(n):
+def totient(n: int) -> int:
     """
     returns euler's totient of n
     """
