@@ -77,31 +77,31 @@ def is_gen(g: int, p: int) -> bool:
 
 
 class ExponentiationCipher:
-   def __init__(self, mod: int) -> None:
-       self.mod = mod
-
-
-   def encrypt(self, num: int, key: int) -> int:
-       return fast_exp(key, num, self.mod)
-
-
-   def decrypt(self, num: int, key: int) -> int:
-       for i in range(self.mod):
-           if fast_exp(key, i, self.mod) == num:
-               return i
+    def __init__(self, mod: int) -> None:
+        self.mod = mod
+ 
+ 
+    def encrypt(self, num: int, key: int) -> int:
+        return fast_exp(key, num, self.mod)
+ 
+ 
+    def decrypt(self, num: int, key: int) -> int:
+        for i in range(self.mod):
+            if fast_exp(key, i, self.mod) == num:
+                return i
 
 
 class PowerCipher:
-   def __init__(self, mod: int) -> None:
-       self.mod = mod
-
-
-   def encrypt(self, num: int, key: int) -> int:
-       return fast_exp(num, key, self.mod)
-
-
-   def decrypt(self, num: int, key: int) -> int:
-       for i in range(self.mod):
-           if fast_exp(i, key, self.mod) == num:
-               return i
+    def __init__(self, mod: int) -> None:
+        self.mod = mod
+ 
+ 
+    def encrypt(self, num: int, key: int) -> int:
+        return fast_exp(num, key, self.mod)
+ 
+ 
+    def decrypt(self, num: int, key: int) -> int:
+        for i in range(self.mod):
+            if fast_exp(i, key, self.mod) == num:
+                return i
 
