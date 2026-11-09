@@ -23,7 +23,7 @@ def is_primative_root(g: int, p: int) -> bool:
     return True
 
 
-def find_all_primative_roots(n: int, p: int) --> int:
+def find_all_primative_roots(n: int, p: int) -> int:
     """returns list of primitives roots of n"""
     pass
 
