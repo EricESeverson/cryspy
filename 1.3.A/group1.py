@@ -12,7 +12,7 @@ def prime_factorize(n ) -> dict: # key = prime, value = exp
     pass
 
 
-def is_primative_root(g: int, p: int) -> bool:
+def slow_is_gen(g: int, p: int) -> bool:
     """Sees if the set r^k| 0<k<n is the same as {1, …, n-1}"""
     reached = [False]*p
     for i in range(0, p-1):
