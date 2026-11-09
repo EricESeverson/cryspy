@@ -43,6 +43,15 @@ def prime_factor(n: int) -> list[list[int, int]]:
                 i += 1
             return [(test_div, i)] + prime_factor(n // (test_div ** i))
 
+def next_prime(n: int) -> int:
+    """
+    Returns the next prime larger than n
+    """
+    i = n+1
+    while not is_prime(i):
+        i += 1
+    return i
+
 def totient(n: int) -> int:
     """
     returns euler's totient of n
