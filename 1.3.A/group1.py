@@ -57,7 +57,6 @@ def next_prime(n: int) -> bool:
 
 def totient(n: int) -> int:
     """
-    takes in dictionary of prime factors and powers
     returns totient value of n
     """
     factorization = factorize(n)
