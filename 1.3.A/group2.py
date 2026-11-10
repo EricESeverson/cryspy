@@ -77,7 +77,7 @@ def is_gen(g: int, p: int) -> bool:
     """
     returns true iff g is a generator mod p
     """
-    if not is_prime(p):
+    if pow(g, p-1, p) != 1:
         return False
     # check g to the power of all divisors of the totient (which will be p-1)
     factors = prime_factor(p-1)
