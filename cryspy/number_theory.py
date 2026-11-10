@@ -102,7 +102,7 @@ def is_gen(g: int, n: int, factorization: dict[int, int] | None = None) -> bool:
         return False
     
     if factorization == None:
-      factorization = factor(m-1)
+      factorization = factor(n-1)
 
     for p in factorization.keys():
         if pow(g,(n-1)//p, n) == 1:
