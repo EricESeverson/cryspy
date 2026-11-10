@@ -48,12 +48,9 @@ def is_prime(n: int) -> bool:
 
 
 def next_prime(n: int) -> bool:
-    while True:
-        if is_prime(n):
-            return n
-
+    while not is_prime(n):
         n += 1
-
+    return n
 
 def totient(n: int) -> int:
     """
