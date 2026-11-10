@@ -23,6 +23,9 @@ def is_prime(n):
     if n == 2 or n == 3:
         return True
     
+    if n % 2 == 0 or n % 3 == 0:
+        return False
+    
     for i in range(math.floor(n ** 0.5) // 6):
         if n % (6 * i - 1) == 0 or n % (6 * i + 1) == 0:
             return False
