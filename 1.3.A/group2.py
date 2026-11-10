@@ -1,6 +1,7 @@
 # 1.3.A Group 2
 import cryspy as cp
 import math
+import abc
 
 def exp(a: int, b: int, m: int) -> int:
     '''
@@ -135,3 +136,42 @@ def isqrt(n):
         else:
             return mid
     return max - 1
+
+class ExpCipher(cp.Cipher):
+    """Exponentiation Cipher"""
+    def __init__(self, mod: int) -> None:
+        self.mod = mod
+
+    def encrypt(self, num: int, key: int) -> int:
+        "returns key ^ num"
+        return pow(key, num, self.mod)
+
+    def decrypt(self, num: int, key: int) -> int:
+        "returns m such that key^m = num"
+        if num == 1:
+            return self.mod-1
+        for i in range(1, self.mod):
+            if pow(key, i, self.mod) == num:
+                return i
+        return None
+
+
+def is_valid_cipher(cipher: abc.ABCMeta, mod: int, k: int) -> bool:
+    """
+    Tests to see if a cipher is a bijection
+
+    Args:
+        cipher: an un-instantiated cipher
+        mod: mod - will be fed into cipher
+        k: key
+
+    Returns:
+        True if cipher is valid, False otherwise
+    """
+    c = cipher(mod)
+    for m in range(1, mod):
+        if c.decrypt(c.encrypt(m, k), k) != m:
+            print(m, c.encrypt(m, k), c.decrypt(c.encrypt(m, k), k))
+            return False
+
+    return True
