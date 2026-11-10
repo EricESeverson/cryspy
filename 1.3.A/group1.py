@@ -5,7 +5,7 @@ from collections.abc import Iterator
 from itertools import product
 
 def isqrt(a: int) -> int:
-    l = 1
+    l = 0
     r = a
 
     while (l < r):
@@ -20,7 +20,7 @@ def isqrt(a: int) -> int:
     return l
 
 def i_nth_root(a: int, n: int) -> int:
-    l = 1
+    l = 0
     r = a
 
     while (l < r):
