@@ -66,15 +66,16 @@ def factors(n: int) -> Iterator[int]:
 
 
 def is_gen(g: int, p: int) -> bool:
-    for f in factors(p-1):
+    for prime_factor in factorize(p-1):
+        f = (p-1) // (prime_factor)
+
         if f == (p-1):
             continue
 
         if pow(g, f, p) == 1:
             return False
-    
-    return pow(g, p-1, p) == 1
 
+    return pow(g, p-1, p) == 1
 
 class ExponentiationCipher:
     def __init__(self, mod: int) -> None:
