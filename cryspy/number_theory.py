@@ -102,17 +102,6 @@ def totient(n: int) -> int:
 
 def is_gen(g: int, n: int, factorization: dict[int, int] | None = None) -> bool:
     """TODO"""
-
-    if not factorization:
-        factorization = factor(n-1)
-        
-    for p in factorization.keys():
-        if pow(g,(n-1)//p, n) == 1:
-            return False
-    return True
-
-def is_gen(g: int, n: int, factorization: dict[int, int] | None = None) -> bool:
-    """TODO"""
    
     if pow(g, n-1, n) != 1:
         return False
