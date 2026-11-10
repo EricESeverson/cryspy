@@ -112,7 +112,7 @@ def is_gen(g: int, n: int, factorization: dict[int, int] | None = None) -> bool:
 
 def find_gen(p: int) -> int | None:
     """TODO"""
-    if n < 2:
+    if p < 2:
         return None
         
     factorization = factor(p-1)
