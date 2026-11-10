@@ -123,18 +123,26 @@ def find_gen(p: int) -> int | None:
             
     return None
     
+PRIMES_BELOW_200 = [
+    2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67,
+    71, 73, 79, 83, 89, 97, 101, 103, 107, 109, 113, 127, 131, 137, 139, 149,
+    151, 157, 163, 167, 173, 179, 181, 191, 193, 197, 199,
+]
 
 def is_prime(n: int) -> bool:
     """TODO"""
+
     
-    if n == 2 or n == 3:
-        return True
-    elif n < 2:
+    if n < 2:
         return False
-        
-    # for p in PRIMES_BELOW_200:
-    #     if n % p == 0:
-    #         return False
+
+    if n in PRIMES_BELOW_200:
+        return True
+
+
+    for p in PRIMES_BELOW_200:
+        if n % p == 0:
+             return False
 
     g = find_gen(n)
     return g != None
