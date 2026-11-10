@@ -113,16 +113,16 @@ def next_prime(n: int) -> int:
     return n
 
 
-def is_gen(k: int,m:int ): -> boolean
+def is_gen(g: int, n: int) -> bool:
     """TODO"""
 
-    if not is_prime(m):
+    if not is_prime(n):
         return False
 
-    factorization = factor(m-1)
+    factorization = factor(n-1)
 
     for p in factorization.keys():
-        if pow(k,(m-1)//p, m) == 1:
+        if pow(g,(n-1)//p, n) == 1:
             return False
 
     return True
