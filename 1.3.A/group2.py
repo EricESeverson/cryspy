@@ -47,12 +47,14 @@ def prime_factor(n: int) -> list[list[int, int]]:
     """
     if (n == 1):
         return []
-    for test_div in range(2, n + 1):
+    for test_div in range(2, math.floor(n ** 0.5) + 1):
         if n % test_div == 0:
             i = 1
             while n % (test_div ** (i + 1)) == 0:
                 i += 1
             return [(test_div, i)] + prime_factor(n // (test_div ** i))
+    # if here, it's prime
+    return [(n, 1)]
 
 def next_prime(n: int) -> int:
     """
