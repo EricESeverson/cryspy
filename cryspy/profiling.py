@@ -1,16 +1,18 @@
 """Unit tests and timing for 1.3.A.
 
-From the Nov 9 board:
+From the Nov 9 board, plus isqrt:
 
     is_prime(n: int) -> bool
     next_prime(n: int) -> int
     is_gen(g: int, p: int) -> bool      # g^1, ..., g^(p-1) = {1, ..., p-1}
+    isqrt(n: int) -> int                # the largest r with r * r <= n
 
 Each test takes your function, or several functions to compare:
 
     from cryspy.profiling import test_is_prime, test_next_prime, test_is_gen
     test_is_prime(is_prime)
     test_is_gen(slow_is_gen, is_gen)
+    test_isqrt(isqrt)
 
 and does three things:
   1. says what the examples are,
@@ -73,6 +75,9 @@ BIGGER_PRIMES = [
     10**99 + 289,
 ]
 
+# (n, label), all not prime
+VERY_BIG_COMPOSITES = [(2**1100, "2^1100"), (3**700, "3^700"), (10**400, "10^400")]
+
 # (n, next_prime(n)) where n is not prime, so "> n" and ">= n" agree
 SMALL_NEXT_PRIME = [
     (0, 2), (1, 2), (8, 11), (14, 17), (24, 29), (90, 97), (114, 127),
@@ -107,6 +112,24 @@ IS_GEN_BIGGER = (
     + [(3, 3506498416453947794933, True), (2, 3506498416453947794933, False),
        (2, 49182124578376174015858333011122132081897957, True)]
 )
+
+# (n, isqrt(n))
+ISQRT_NEAR_SQUARES = [
+    (99, 9), (100, 10), (9999, 99), (10000, 100),
+    (4503599761588224, 67108864), (4503599761588225, 67108865),
+    (10**16 - 1, 99999999), (10**16, 100000000),
+    (10**18 - 1, 999999999), (2**64 - 1, 4294967295),
+]
+# n = p * p for big primes p, so isqrt(n) = p
+ISQRT_PRIME_SQUARES = [9007199254740997, 18446744073709551629]
+
+ISQRT_HUGE = [
+    (4**1100 - 1, 2**1100 - 1), (4**1100, 2**1100),
+    (10**400 - 1, 10**200 - 1), (10**400, 10**200),
+]
+
+# isqrt(4^k - 1) = 2^k - 1, timed for k = 16, 32, ..., 65536
+ISQRT_TIMING_BITS = [2**j for j in range(4, 17)]
 
 # (bits k, smallest prime p >= 2^k, smallest generator g mod p)
 TIMING_PRIMES = [
@@ -153,7 +176,7 @@ def run(f, args, time_limit=1.0):
     except TooSlow:
         answer, status = None, "slow"
     except Exception as e:
-        answer, status = f"{type(e).__name__}: {e}", "error"
+        answer, status = f"raised {type(e).__name__}", "error"
     finally:
         if alarm:
             signal.setitimer(signal.ITIMER_REAL, 0)
@@ -166,6 +189,8 @@ def run(f, args, time_limit=1.0):
 
 def short(x):
     """Long numbers print as 49675795...19934769 (71 digits)."""
+    if isinstance(x, int) and x.bit_length() > 10000:
+        return f"(a {x.bit_length()}-bit number)"
     s = str(x)
     return s if len(s) <= 26 else f"{s[:8]}...{s[-8:]} ({len(s)} digits)"
 
@@ -216,7 +241,7 @@ def compare_functions(fs, inputs, time_limit=1.0, labels=None, expected=None):
                 cells.append(f"over {time_limit:g} s")
             elif status == "error":
                 cells.append("error")
-                notes.append(f"{names[j]} raised {got}")
+                notes.append(f"{names[j]} {got}")
             else:
                 cells.append("wrong")
                 notes.append(f"{names[j]} returned {short(got)}")
@@ -309,6 +334,9 @@ def test_is_prime(*fs, time_limit=1.0):
         check(f, [((n,), False) for n in BIGGER_COMPOSITES], s, time_limit)
         print("\nExamples 6: bigger primes")
         check(f, [((n,), True) for n in BIGGER_PRIMES], s, time_limit)
+        print("\nExamples 7: very big numbers that are not prime")
+        check(f, [((n,), False, lab) for n, lab in VERY_BIG_COMPOSITES], s,
+              time_limit)
         scores.append(s)
 
     print("\n======== Timing: n is the smallest prime with k bits ========")
@@ -383,3 +411,40 @@ def test_is_gen(*fs, time_limit=1.0):
         expected=[True] * len(TIMING_PRIMES))
     return _summary("test_is_gen", fs, scores, finished,
                     [k for k, p, g in TIMING_PRIMES])
+
+
+def test_isqrt(*fs, time_limit=1.0):
+    """Examples, checks and timing for isqrt(n) -> int, the largest r with
+    r * r <= n."""
+    scores = []
+    for f in fs:
+        _header("test_isqrt", f)
+        s = Score()
+        print("\nExamples 1: every n from 0 to 199, checking r * r <= n < (r+1) * (r+1)"
+              " (only mistakes are shown)")
+        for n in range(200):
+            status, r, seconds = run(f, (n,), time_limit)
+            if status == "ok" and isinstance(r, int) and r * r <= n < (r + 1) * (r + 1):
+                s.right += 1
+            else:
+                s.wrong += 1
+                print(f"  {f.__name__}({n}) = {r if status == 'ok' else status}  ✗")
+        print(f"  {s.right}/200 right")
+        print("\nExamples 2: n near a perfect square")
+        check(f, [((n,), r) for n, r in ISQRT_NEAR_SQUARES], s, time_limit)
+        print("\nExamples 3: n = p * p for a big prime p")
+        check(f, [((p * p,), p, f"{p} * {p}") for p in ISQRT_PRIME_SQUARES],
+              s, time_limit)
+        print("\nExamples 4: very big n")
+        labels = ["4^1100 - 1", "4^1100", "10^400 - 1", "10^400"]
+        check(f, [((n,), r, lab) for (n, r), lab in zip(ISQRT_HUGE, labels)],
+              s, time_limit)
+        scores.append(s)
+
+    print("\n======== Timing: n = 4^k - 1, so the answer is 2^k - 1 ========")
+    finished = compare_functions(
+        list(fs), [4**k - 1 for k in ISQRT_TIMING_BITS], time_limit,
+        labels=[f"{2 * k} bits: 4^{k} - 1" for k in ISQRT_TIMING_BITS],
+        expected=[2**k - 1 for k in ISQRT_TIMING_BITS])
+    return _summary("test_isqrt", fs, scores, finished,
+                    [2 * k for k in ISQRT_TIMING_BITS])
