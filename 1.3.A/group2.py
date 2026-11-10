@@ -78,14 +78,15 @@ def totient(n: int) -> int:
         res *= factor[0] ** (factor[1] - 1) * (factor[0] - 1)
     return res
 
-def is_gen(g: int, p: int) -> bool:
+def is_gen(g: int, p: int, factors: list[list[int, int]] | None=None) -> bool:
     """
     returns true iff g is a generator mod p
     """
     if pow(g, p-1, p) != 1:
         return False
+    if factors == None:
+        factors = prime_factor(p-1)
     # check g to the power of all divisors of the totient (which will be p-1)
-    factors = prime_factor(p-1)
     for factor in factors:
         # we check g ** ((p-1) / each prime function)
         if pow(g, (p - 1) // factor[0], p) == 1:
