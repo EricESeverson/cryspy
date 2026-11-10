@@ -9,7 +9,7 @@ From the Nov 9 board, plus isqrt:
 
 Each test takes your function, or several functions to compare:
 
-    from cryspy.profiling import test_is_prime, test_next_prime, test_is_gen
+    from cryspy.profiling import *    # test_is_prime, ..., compare_functions
     test_is_prime(is_prime)
     test_is_gen(slow_is_gen, is_gen)
     test_isqrt(isqrt)
@@ -22,7 +22,22 @@ and does three things:
 A call that takes longer than time_limit seconds (default 1) is stopped, and
 that function skips the rest of that list, since the later inputs are bigger.
 
-compare_functions(fs, inputs) does step 3 for any functions you like.
+Head to head: put two (or more) functions in one call.
+
+    test_is_prime(group1.is_prime, group2.is_prime)
+
+The timing table then has one column per function. Functions with the same
+name are labeled by module (group1.is_prime, group2.is_prime). To choose the
+column names yourself, pass a dict:
+
+    test_is_prime({"Group 1": group1.is_prime, "Group 2": group2.is_prime})
+
+A list works too: test_is_prime([f, g, h]). Give a slow function more time
+with time_limit=5.
+
+compare_functions(fs, inputs) does step 3 for any functions you like:
+
+    compare_functions([group1.totient, group2.totient], [10**k for k in range(2, 20)])
 """
 
 import signal
@@ -146,6 +161,42 @@ TIMING_PRIMES = [
     (64, 18446744073709551629, 2),
 ]
 
+# ================================================================ naming
+
+
+class _Named:
+    """A function with a display name, so group1.is_prime and group2.is_prime
+    get different columns."""
+
+    def __init__(self, f, name):
+        self.f, self.__name__ = f, name
+
+    def __call__(self, *args):
+        return self.f(*args)
+
+
+def _named(fs):
+    """Accept f, g, ... or a list [f, g] or a dict {"label": f}. Repeated
+    names get their module in front: group1.is_prime, group2.is_prime."""
+    flat = []
+    for f in fs:
+        if isinstance(f, dict):
+            flat += list(f.items())
+        elif isinstance(f, (list, tuple)):
+            flat += [(None, g) for g in f]
+        else:
+            flat.append((None, f))
+    names = [k or getattr(g, "__name__", repr(g)) for k, g in flat]
+    out = []
+    for i, ((k, g), n) in enumerate(zip(flat, names)):
+        if k is None and names.count(n) > 1:
+            n = f"{getattr(g, '__module__', None) or '?'}.{n}"
+        if [m for m in out if m.__name__ == n]:
+            n = f"{n} #{i + 1}"
+        out.append(_Named(g, n))
+    return out
+
+
 # ================================================================ timing
 
 
@@ -211,7 +262,7 @@ def compare_functions(fs, inputs, time_limit=1.0, labels=None, expected=None):
     Returns:
         for each function, how many inputs it finished
     """
-    fs = fs if isinstance(fs, (list, tuple)) else [fs]
+    fs = _named(fs if isinstance(fs, (list, tuple)) else [fs])
     inputs = [x if isinstance(x, tuple) else (x,) for x in inputs]
     labels = labels or [", ".join(short(a) for a in args) for args in inputs]
     names = [f.__name__ for f in fs]
@@ -316,6 +367,7 @@ def _summary(test, fs, scores, finished, bits):
 
 def test_is_prime(*fs, time_limit=1.0):
     """Examples, checks and timing for is_prime(n) -> bool."""
+    fs = _named(fs)
     scores = []
     for f in fs:
         _header("test_is_prime", f)
@@ -350,6 +402,7 @@ def test_is_prime(*fs, time_limit=1.0):
 
 def test_next_prime(*fs, time_limit=1.0):
     """Examples, checks and timing for next_prime(n) -> int."""
+    fs = _named(fs)
     scores = []
     for f in fs:
         _header("test_next_prime", f)
@@ -376,6 +429,7 @@ def test_next_prime(*fs, time_limit=1.0):
 
 def test_is_gen(*fs, time_limit=1.0):
     """Examples, checks and timing for is_gen(g, p) -> bool."""
+    fs = _named(fs)
     scores = []
     for f in fs:
         _header("test_is_gen", f)
@@ -416,6 +470,7 @@ def test_is_gen(*fs, time_limit=1.0):
 def test_isqrt(*fs, time_limit=1.0):
     """Examples, checks and timing for isqrt(n) -> int, the largest r with
     r * r <= n."""
+    fs = _named(fs)
     scores = []
     for f in fs:
         _header("test_isqrt", f)
