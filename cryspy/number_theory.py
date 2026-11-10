@@ -95,13 +95,35 @@ def totient(n: int) -> int:
   return total
 
 
-def is_prime(n: int) -> bool:
-    """Prime function - TODO"""
+def is_gen(g: int, n: int) -> bool:
+    """TODO"""
+
+    factorization = factor(n-1)
+    for p in factorization.keys():
+        if pow(g,(n-1)//p, n) == 1:
+            return False
+    return True
+
+
+def find_gen(p: int) -> int | None:
+    """TODO"""
     
-    if n < 2:
+    for i in range(1, p):
+        if is_gen(i, p):
+            return i
+    return None
+
+
+def is_prime(n: int) -> bool:
+    """TODO"""
+    
+    if n == 2 or n == 3:
+        return True
+    elif n < 2 or n % 2 == 0 or n % 3 == 0:
         return False
-    factored = factor(n)
-    return len(factored) == 1 and list(factored.values())[0] == 1
+
+    g = find_gen(n)
+    return g != None
 
 
 def next_prime(n: int) -> int:
@@ -109,33 +131,7 @@ def next_prime(n: int) -> int:
     
     while not is_prime(n):
         n += 1
-        
     return n
 
 
-def is_gen(g: int, n: int) -> bool:
-    """TODO"""
-
-    if not is_prime(n):
-        return False
-
-    factorization = factor(n-1)
-
-    for p in factorization.keys():
-        if pow(g,(n-1)//p, n) == 1:
-            return False
-
-    return True
-
-
-def find_gen(p: int) -> int | None:
-    """TODO"""
-    
-    if not is_prime(p):
-        return
-        
-    for i in range(1, p):
-        if is_gen(i, p):
-            return i
-            
 
