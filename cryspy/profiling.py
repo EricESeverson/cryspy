@@ -26,7 +26,8 @@ Head to head: put two (or more) functions in one call.
 
     test_is_prime(group1.is_prime, group2.is_prime)
 
-The timing table then has one column per function. Functions with the same
+Every example list and the timing table then show one column per function,
+case by case. Functions with the same
 name are labeled by module (group1.is_prime, group2.is_prime). To choose the
 column names yourself, pass a dict:
 
@@ -348,8 +349,57 @@ def check(f, cases, score, time_limit=1.0, only_mistakes=False):
             print(f"  {call} = {shown}  ✗ expected {short(expected)}")
 
 
-def _header(test, f):
-    print(f"\n======== {test}: {f.__name__} ========")
+def _header(test, fs):
+    print(f"\n======== {test}: {', '.join(f.__name__ for f in fs)} ========")
+
+
+def _table(fs, cases, scores, time_limit, only_mistakes=False):
+    """Several functions on the same cases: one row per case, one column per
+    function. A function that is too slow skips the rest of the list."""
+    names = [f.__name__ for f in fs]
+    rows, running = [], set(range(len(fs)))
+    for i, (args, expected, *label) in enumerate(cases):
+        cells, bad = [], False
+        for j, f in enumerate(fs):
+            if j not in running:
+                cells.append("")
+                continue
+            status, got, seconds = run(f, args, time_limit)
+            if status == "slow":
+                running.discard(j)
+                scores[j].skipped += len(cases) - i
+                cells.append(f"over {time_limit:g} s")
+                bad = True
+            elif status == "ok" and got == expected:
+                scores[j].right += 1
+                cells.append(f"✓ {seconds:.6f}")
+            else:
+                scores[j].wrong += 1
+                cells.append(f"✗ {short(got)}" if status == "ok" else f"✗ {got}")
+                bad = True
+        shown_args = label[0] if label else ", ".join(short(a) for a in args)
+        if bad or not only_mistakes:
+            rows.append((shown_args, cells, short(expected)))
+    if rows:
+        lw = max(5, *(len(r[0]) for r in rows))
+        w = max(10, *map(len, names), *(len(c) for r in rows for c in r[1]))
+        print(f"  {'input':<{lw}}" + "".join(f"  {n:>{w}}" for n in names)
+              + "  expected")
+        for label, cells, expected in rows:
+            print(f"  {label:<{lw}}" + "".join(f"  {c:>{w}}" for c in cells)
+                  + f"  {expected}")
+
+
+def _section(fs, scores, title, cases, time_limit, only_mistakes=False):
+    print("\n" + title)
+    before = [sc.right for sc in scores]
+    if len(fs) == 1:
+        check(fs[0], cases, scores[0], time_limit, only_mistakes)
+    else:
+        _table(fs, cases, scores, time_limit, only_mistakes)
+    if only_mistakes:
+        for f, sc, b in zip(fs, scores, before):
+            print(f"  {f.__name__}: {sc.right - b}/{len(cases)} right")
 
 
 def _summary(test, fs, scores, finished, bits):
@@ -363,33 +413,30 @@ def _summary(test, fs, scores, finished, bits):
 
 
 # ================================================================ the tests
+# Pass one function, or several to compare them head to head: each example
+# list is then one table, a column per function.
 
 
 def test_is_prime(*fs, time_limit=1.0):
     """Examples, checks and timing for is_prime(n) -> bool."""
     fs = _named(fs)
-    scores = []
-    for f in fs:
-        _header("test_is_prime", f)
-        s = Score()
-        print("\nExamples 1: every n from 0 to 199 (only mistakes are shown)")
-        check(f, [((n,), n in PRIMES_BELOW_200) for n in range(200)], s,
-              time_limit, only_mistakes=True)
-        print(f"  {s.right}/200 right")
-        print("\nExamples 2: small numbers that are not prime")
-        check(f, [((n,), False) for n in SMALL_COMPOSITES], s, time_limit)
-        print("\nExamples 3: small primes")
-        check(f, [((n,), True) for n in SMALL_PRIMES], s, time_limit)
-        print("\nExamples 4: bigger numbers, some prime and some not")
-        check(f, [((n,), a) for n, a in BIGGER_MIXED], s, time_limit)
-        print("\nExamples 5: bigger numbers that are not prime")
-        check(f, [((n,), False) for n in BIGGER_COMPOSITES], s, time_limit)
-        print("\nExamples 6: bigger primes")
-        check(f, [((n,), True) for n in BIGGER_PRIMES], s, time_limit)
-        print("\nExamples 7: very big numbers that are not prime")
-        check(f, [((n,), False, lab) for n, lab in VERY_BIG_COMPOSITES], s,
-              time_limit)
-        scores.append(s)
+    scores = [Score() for f in fs]
+    t = time_limit
+    _header("test_is_prime", fs)
+    _section(fs, scores, "Examples 1: every n from 0 to 199 (only mistakes are shown)",
+             [((n,), n in PRIMES_BELOW_200) for n in range(200)], t, True)
+    _section(fs, scores, "Examples 2: small numbers that are not prime",
+             [((n,), False) for n in SMALL_COMPOSITES], t)
+    _section(fs, scores, "Examples 3: small primes",
+             [((n,), True) for n in SMALL_PRIMES], t)
+    _section(fs, scores, "Examples 4: bigger numbers, some prime and some not",
+             [((n,), a) for n, a in BIGGER_MIXED], t)
+    _section(fs, scores, "Examples 5: bigger numbers that are not prime",
+             [((n,), False) for n in BIGGER_COMPOSITES], t)
+    _section(fs, scores, "Examples 6: bigger primes",
+             [((n,), True) for n in BIGGER_PRIMES], t)
+    _section(fs, scores, "Examples 7: very big numbers that are not prime",
+             [((n,), False, lab) for n, lab in VERY_BIG_COMPOSITES], t)
 
     print("\n======== Timing: n is the smallest prime with k bits ========")
     finished = compare_functions(
@@ -403,20 +450,18 @@ def test_is_prime(*fs, time_limit=1.0):
 def test_next_prime(*fs, time_limit=1.0):
     """Examples, checks and timing for next_prime(n) -> int."""
     fs = _named(fs)
-    scores = []
-    for f in fs:
-        _header("test_next_prime", f)
-        s = Score()
-        print("\nExamples 1: small n that are not prime")
-        check(f, [((n,), p) for n, p in SMALL_NEXT_PRIME], s, time_limit)
-        print("\nExamples 2: n = 10^d")
-        check(f, [((10**d,), 10**d + k, f"10^{d}")
-                  for d, k in POWERS_OF_TEN_NEXT_PRIME], s, time_limit)
-        print("\nNot checked, since the class hasn't decided: n already prime")
-        for n in (7, 13):
+    scores = [Score() for f in fs]
+    t = time_limit
+    _header("test_next_prime", fs)
+    _section(fs, scores, "Examples 1: small n that are not prime",
+             [((n,), p) for n, p in SMALL_NEXT_PRIME], t)
+    _section(fs, scores, "Examples 2: n = 10^d",
+             [((10**d,), 10**d + k, f"10^{d}") for d, k in POWERS_OF_TEN_NEXT_PRIME], t)
+    print("\nNot checked, since the class hasn't decided: n already prime")
+    for n in (7, 13):
+        for f in fs:
             status, got, seconds = run(f, (n,), time_limit)
             print(f"  {f.__name__}({n}) = {got if status == 'ok' else status}")
-        scores.append(s)
 
     print("\n======== Timing: n = 2^k ========")
     finished = compare_functions(
@@ -430,10 +475,11 @@ def test_next_prime(*fs, time_limit=1.0):
 def test_is_gen(*fs, time_limit=1.0):
     """Examples, checks and timing for is_gen(g, p) -> bool."""
     fs = _named(fs)
-    scores = []
-    for f in fs:
-        _header("test_is_gen", f)
-        s = Score()
+    scores = [Score() for f in fs]
+    t = time_limit
+    _header("test_is_gen", fs)
+    if len(fs) == 1:
+        f, s = fs[0], scores[0]
         print("\nExamples 1: every g from 1 to p-1, for each prime p < 32.")
         print("Each line lists the g where your function returns True.")
         for p, gens in GENERATORS.items():
@@ -451,11 +497,15 @@ def test_is_gen(*fs, time_limit=1.0):
                     print(f"      {f.__name__}({g}, {p}): {status} {got or ''}")
                 elif got not in (True, False):
                     print(f"      {f.__name__}({g}, {p}) = {got!r}, not True or False")
-        print("\nExamples 2: p is not prime")
-        check(f, [((g, p), a) for g, p, a in IS_GEN_NOT_PRIME], s, time_limit)
-        print("\nExamples 3: bigger primes p")
-        check(f, [((g, p), a) for g, p, a in IS_GEN_BIGGER], s, time_limit)
-        scores.append(s)
+    else:
+        _section(fs, scores, "Examples 1: every g from 1 to p-1, for each prime p < 32"
+                 " (only mistakes are shown)",
+                 [((g, p), g in gens) for p, gens in GENERATORS.items()
+                  for g in range(1, p)], t, True)
+    _section(fs, scores, "Examples 2: p is not prime",
+             [((g, p), a) for g, p, a in IS_GEN_NOT_PRIME], t)
+    _section(fs, scores, "Examples 3: bigger primes p",
+             [((g, p), a) for g, p, a in IS_GEN_BIGGER], t)
 
     print("\n======== Timing: p is the smallest prime with k bits, "
           "g a generator ========")
@@ -471,12 +521,12 @@ def test_isqrt(*fs, time_limit=1.0):
     """Examples, checks and timing for isqrt(n) -> int, the largest r with
     r * r <= n."""
     fs = _named(fs)
-    scores = []
-    for f in fs:
-        _header("test_isqrt", f)
-        s = Score()
-        print("\nExamples 1: every n from 0 to 199, checking r * r <= n < (r+1) * (r+1)"
-              " (only mistakes are shown)")
+    scores = [Score() for f in fs]
+    t = time_limit
+    _header("test_isqrt", fs)
+    print("\nExamples 1: every n from 0 to 199, checking r * r <= n < (r+1) * (r+1)"
+          " (only mistakes are shown)")
+    for f, s in zip(fs, scores):
         for n in range(200):
             status, r, seconds = run(f, (n,), time_limit)
             if status == "ok" and isinstance(r, int) and r * r <= n < (r + 1) * (r + 1):
@@ -484,17 +534,14 @@ def test_isqrt(*fs, time_limit=1.0):
             else:
                 s.wrong += 1
                 print(f"  {f.__name__}({n}) = {r if status == 'ok' else status}  ✗")
-        print(f"  {s.right}/200 right")
-        print("\nExamples 2: n near a perfect square")
-        check(f, [((n,), r) for n, r in ISQRT_NEAR_SQUARES], s, time_limit)
-        print("\nExamples 3: n = p * p for a big prime p")
-        check(f, [((p * p,), p, f"{p} * {p}") for p in ISQRT_PRIME_SQUARES],
-              s, time_limit)
-        print("\nExamples 4: very big n")
-        labels = ["4^1100 - 1", "4^1100", "10^400 - 1", "10^400"]
-        check(f, [((n,), r, lab) for (n, r), lab in zip(ISQRT_HUGE, labels)],
-              s, time_limit)
-        scores.append(s)
+        print(f"  {f.__name__}: {s.right}/200 right")
+    _section(fs, scores, "Examples 2: n near a perfect square",
+             [((n,), r) for n, r in ISQRT_NEAR_SQUARES], t)
+    _section(fs, scores, "Examples 3: n = p * p for a big prime p",
+             [((p * p,), p, f"{p} * {p}") for p in ISQRT_PRIME_SQUARES], t)
+    labels = ["4^1100 - 1", "4^1100", "10^400 - 1", "10^400"]
+    _section(fs, scores, "Examples 4: very big n",
+             [((n,), r, lab) for (n, r), lab in zip(ISQRT_HUGE, labels)], t)
 
     print("\n======== Timing: n = 4^k - 1, so the answer is 2^k - 1 ========")
     finished = compare_functions(
