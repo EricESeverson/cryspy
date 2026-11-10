@@ -92,8 +92,11 @@ def factors(n: int) -> Iterator[int]:
         yield out
 
 
-def is_gen(g: int, p: int) -> bool:
-    for prime_factor in factorize(p-1):
+def is_gen(g: int, p: int, prime_factors: list = None) -> bool:
+    if prime_factors is None:
+        prime_factors = factorize(p-1).keys()
+
+    for prime_factor in prime_factors:
         f = (p-1) // (prime_factor)
 
         if f == (p-1):
@@ -103,6 +106,7 @@ def is_gen(g: int, p: int) -> bool:
             return False
 
     return pow(g, p-1, p) == 1
+
 
 class ExponentiationCipher:
     def __init__(self, mod: int) -> None:
