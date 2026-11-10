@@ -1,11 +1,5 @@
 """Number theory primitives, as written with the class on Day 11 (Nov 3)."""
 
-SMALL_PRIMES = [
-    2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67,
-    71, 73, 79, 83, 89, 97, 101, 103, 107, 109, 113, 127, 131, 137, 139, 149,
-    151, 157, 163, 167, 173, 179, 181, 191, 193, 197, 199,
-]
-
 def gcd(a, b):
     """GCD
 
@@ -137,7 +131,7 @@ def is_prime(n: int) -> bool:
     elif n < 2:
         return False
         
-    for p in SMALL_PRIMES:
+    for p in cp.profiling.SMALL_PRIMES:
         if n % p == 0:
             return False
 
