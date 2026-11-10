@@ -113,3 +113,25 @@ def find_gens(p: int) -> list[int]:
 
     # this produces the rest of the primitive roots
     return [gen ** i % p for i in coprimes]
+
+def isqrt(n):
+    """
+    returns floor(n ** 0.5), but without float artifacts
+    """
+    # rough approximation:
+    # bitlength of sqrt(n) is (n+1) // 2 bits long I think????
+    if n == 0:
+        return 0
+    new_len = (n.bit_length() + 1) // 2
+    min = 1 << (new_len - 1)
+    max = 1 << new_len
+    while min < max - 1:
+        mid = (min + max) // 2
+        mid2 = mid ** 2
+        if mid2 > n:
+            max = mid
+        elif mid2 < n:
+            min = mid
+        else:
+            return mid
+    return max - 1
