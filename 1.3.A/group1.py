@@ -4,6 +4,36 @@ import cryspy as cp
 from collections.abc import Iterator
 from itertools import product
 
+def isqrt(a: int) -> int:
+    l = 1
+    r = a
+
+    while (l < r):
+        mid = (l+r+1)//2
+        mid_squared = mid * mid
+
+        if mid_squared > a:
+            r = mid-1
+        else:
+            l = mid
+    
+    return l
+
+def i_nth_root(a: int, n: int) -> int:
+    l = 1
+    r = a
+
+    while (l < r):
+        mid = (l+r+1)//2
+
+        if (mid ** n) > a:
+            r = mid-1
+        else:
+            l = mid
+    
+    return l
+
+
 def is_prime(n: int) -> bool:
     if (n <= 1):
         return False
