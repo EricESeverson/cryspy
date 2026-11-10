@@ -1,4 +1,5 @@
 """Number theory primitives, as written with the class on Day 11 (Nov 3)."""
+from profiling import PRIMES_BELOW_200
 
 def gcd(a, b):
     """GCD
@@ -131,7 +132,7 @@ def is_prime(n: int) -> bool:
     elif n < 2:
         return False
         
-    for p in cp.profiling.SMALL_PRIMES:
+    for p in PRIMES_BELOW_200:
         if n % p == 0:
             return False
 
