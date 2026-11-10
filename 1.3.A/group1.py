@@ -25,11 +25,12 @@ def next_prime(n: int) -> bool:
         n += 1
 
 
-def totient(factorization: dict[int, int]) -> int:
+def totient(n: int) -> int:
     """
     takes in dictionary of prime factors and powers
     returns totient value of n
     """
+    factorization = factorize(n)
     
     product = 1
     for prime, exp in factorization.items():
