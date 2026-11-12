@@ -79,8 +79,8 @@ class CryptoStack:
     Args:
         encoder: turns a message into bytes and back.
         block_size: the number of bits in a block.
-        cipher: encrypts one block at a time; its mod must be at least
-            2**block_size.
+        cipher: encrypts one block at a time; it must have at least
+            2**block_size messages.
         text_format: "hex" or "base64", the text that send returns.
     """
 
@@ -88,8 +88,9 @@ class CryptoStack:
                  text_format: str = "hex") -> None:
         self.encoder = encoder
         self.blocker = Blocker(block_size)
-        if 2 ** block_size > cipher.mod:
-            raise ValueError("Ur special! Cipher mod less than 2^block_size")
+        # len() fails on a range this big, but `in` is instant
+        if 2 ** block_size - 1 not in cipher.messages:
+            raise ValueError("cipher has fewer than 2^block_size messages")
         self.cipher = cipher
         self.text_format = text_format
         # every ciphertext int is less than mod, so it fits in this many bytes
