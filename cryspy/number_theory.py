@@ -22,14 +22,7 @@ def mult_inverse(a: int, n: int) -> int:
     return gx % n
 
 
-# Binary search. Seconds on a random n (laptop):
-#     bits of n     seconds
-#          1024      0.0001
-#          4096      0.004
-#         16384      0.15
-#         65536      4.5
-#        262144    157
-# Each step of the loop halves the interval and squares a number half the
+# Binary search. Each step of the loop halves the interval and squares a number half the
 # size of n, so about (bits of n) / 2 squarings in all.
 # OPEN: Newton's method takes far fewer steps (each one a big division),
 # a possible improvement for huge n.
@@ -37,8 +30,8 @@ def isqrt(n: int) -> int:
     """
     returns floor(n ** 0.5), but without float artifacts
     """
-    # rough approximation:
-    # bitlength of sqrt(n) is (n+1) // 2 bits long I think????
+    # if n has L bits, floor(sqrt(n)) has (L + 1) // 2 bits, so it lies in
+    # [2^(new_len - 1), 2^new_len)
     if n == 0:
         return 0
     new_len = (n.bit_length() + 1) // 2
@@ -59,7 +52,14 @@ def isqrt(n: int) -> int:
 # Trial division, stopping at isqrt(n) (computed once, not squaring d
 # every step). When n is prime it returns n itself.
 def factor(n: int) -> int:
-    """TODO"""
+    """Find a factor of n.
+
+    Args:
+        n: an integer
+
+    Returns:
+        A factor of n.
+    """
     r = isqrt(n)
     d = 2
     while d <= r:
@@ -70,7 +70,17 @@ def factor(n: int) -> int:
 
 
 def factorize(n: int) -> dict[int, int]:
-    """TODO"""
+    """Find the prime factorization of n.
+
+    If the prime factorization of n is `n = (p_1 ** e_1) * (p_2 ** e_2) ...`,
+    returns the dictionary `{p_1: e_1, p_2: e_2, ... }`.
+
+    Args:
+        n: an integer
+
+    Returns:
+        A dictionary with prime factors and their exponents.
+    """
     factors = {}
     d = 2
     r = isqrt(n)
@@ -98,6 +108,8 @@ def totient(n: int) -> int:
     # n * (1 - 1/p_1) * ... * (1 - 1/p_k) proved in class
     # substitute n = p_1^(e_1) * ... * p_k^(e_k)
     # = p_1^(e_1 - 1)(p_1 - 1) * ... * p_k^(e_k - 1)(p_k - 1)
+    # TODO: the formula as proved, n // p * (p - 1) for each prime p, might
+    # be faster; worth timing.
     product = 1
     for prime, exp in factorization.items():
         product *= (prime ** (exp-1)) * (prime-1)
@@ -120,7 +132,16 @@ def is_gen(g: int, p: int, factorization: dict[int, int] | None = None) -> bool:
 
 
 def find_gen(p: int) -> int | None:
-    """TODO"""
+    """Find a generator of the multiplicative group mod p.
+
+    Returns a primitive root of Z mod p.
+
+    Args:
+        p: the prime modulo value
+
+    Returns:
+        A primitive root of Z mod p
+    """
     if p < 2:
         return None
 
@@ -157,8 +178,9 @@ def find_gens(p: int) -> list[int]:
     return [pow(gen, i, p) for i in coprimes]
 
 
-# Sieve of Eratosthenes. Seconds (laptop): n = 10^4 0.0008, 10^5 0.007,
-# 10^6 0.055.
+# Sieve of Eratosthenes.
+# OPEN: the list takes n entries of memory. A segmented sieve (n numbers at
+# a time), as an iterator, would not.
 def primes_under(n: int) -> list[int]:
     """
     returns all primes less than or equal to n
@@ -179,7 +201,7 @@ def primes_under(n: int) -> list[int]:
     return primes
 
 
-# Built every time cryspy is imported (under 0.001 s).
+# Built every time cryspy is imported.
 # OPEN: how many small primes to keep.
 SMALL_PRIMES: list[int] = primes_under(10000)
 
@@ -188,20 +210,18 @@ SMALL_PRIMES: list[int] = primes_under(10000)
 # If the Fermat test fails for any g, n is not prime.
 # OPEN: factorize(n - 1) runs before the first Fermat test. For a composite
 # n with no small factor, one Fermat test would say "not prime" at once,
-# but we first spend as long as factoring n - 1 takes (an 83-bit example
-# ran over 2 minutes). Testing first, then factoring, would fix this.
+# but we first spend as long as factoring n - 1 takes. Testing first, then
+# factoring, would fix this.
 def is_prime(n: int) -> bool:
     """
     returns true iff n is prime
     """
     if n < 2:
         return False
-    # check small prime factors
-    if n in SMALL_PRIMES:
-        return True
+    # check small prime factors, in one loop over SMALL_PRIMES
     for p in SMALL_PRIMES:
         if n % p == 0:
-            return False
+            return n == p
 
     # assume this is prime
     factorization = factorize(n - 1)
@@ -213,6 +233,7 @@ def is_prime(n: int) -> bool:
     return False
 
 
+# TODO: a faster version (for example, skip even numbers).
 def next_prime(n: int) -> int:
     """
     Returns the next prime larger than n

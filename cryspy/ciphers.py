@@ -34,7 +34,7 @@ class Cipher(ABC):
 
     # Tries every message, about len(messages) encryptions.
     def brute_force_decrypt(self, num: int, key) -> int:
-        """TODO"""
+        """Decrypts num by brute force testing all possible messages"""
         for m in self.messages:
             if self.encrypt(m, key) == num:
                 return m
