@@ -1,6 +1,6 @@
 """cryspy: the class library for Mathematical Cryptography, Block 2, 2026."""
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 from .ciphers import (AdditionCipher, AffineCipher, Cipher,
                       ExponentiationCipher, PowerCipher)
