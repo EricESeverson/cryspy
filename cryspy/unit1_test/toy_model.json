@@ -1,0 +1,85 @@
+{
+ "templates": [
+  "{P} {HIDV} {OBJ} {PREP} {PLACE} {WHEN}.",
+  "{THEN} ETHEL THE CAT {OV} {OO}.",
+  "{Q} {SAYV} {CATCH}.",
+  "SO {P} {SENDV} {R} {MORE} {NOTE}."
+ ],
+ "W": [
+  {
+   "MOM": 8,
+   "I": 8
+  },
+  {
+   "HID": 8,
+   "SET": 8
+  },
+  {
+   "HER NOTE": 8,
+   "IT": 8
+  },
+  {
+   "UNDER": 8,
+   "ON": 8
+  },
+  {
+   "THE TEA TIN": 8,
+   "A TOTE": 8
+  },
+  {
+   "AT TEN TO ONE": 2,
+   "AT TEN OR SO": 4,
+   "AT NOON": 2,
+   "IN THE RAIN": 8
+  },
+  {
+   "THEN": 4,
+   "AT ONCE": 8,
+   "LATER": 4
+  },
+  {
+   "ATE": 8,
+   "TORE": 8
+  },
+  {
+   "IT IN A SEC": 8,
+   "IT": 8
+  },
+  {
+   "HE": 8,
+   "I": 8
+  },
+  {
+   "SHOUTED": 8,
+   "MOANED": 8
+  },
+  {
+   "NO NO NO NO": 2,
+   "OH NO OH NO": 2,
+   "IT IS IN ETHEL": 4,
+   "TUT TUT": 4,
+   "HE ATE IT": 4
+  },
+  {
+   "HE": 8,
+   "I": 8
+  },
+  {
+   "SENT": 8,
+   "MAILED": 8
+  },
+  {
+   "HER": 8,
+   "US": 8
+  },
+  {
+   "A RED": 8,
+   "A THIRD": 8
+  },
+  {
+   "ODE": 8,
+   "NOTE IN A HAT": 8
+  }
+ ],
+ "D": 16
+}
