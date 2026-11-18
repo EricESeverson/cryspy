@@ -219,6 +219,21 @@ def test_next_relatively_prime():
     assert stack.receive(stack.send("https://example.com", key), key) == "https://example.com"
 
 
+def test_power_cipher_decrypt():
+    cipher = PowerCipher(257)
+    for key in [3, 5, 181, 255]:
+        assert all(cipher.decrypt(cipher.encrypt(m, key), key) == m
+                   for m in cipher.messages)
+        assert all(cipher.decrypt(c, key) == cipher.brute_force_decrypt(c, key)
+                   for c in cipher.messages)
+    # big p: decrypt no longer tries every message
+    p = 2 ** 127 - 1  # prime
+    key = next_relatively_prime(2 ** 100 + 12345, p - 1)
+    stack = CryptoStack(TextEncoder(), 120, PowerCipher(p), random_bits=24)
+    message = "https://example.com/a-long-ish/link"
+    assert stack.receive(stack.send(message, key), key) == message
+
+
 if __name__ == "__main__":
     for name, test in list(globals().items()):
         if name.startswith("test_"):
