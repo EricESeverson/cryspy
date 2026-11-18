@@ -4,7 +4,7 @@ __version__ = "0.3.2"
 
 from .ciphers import (AdditionCipher, AffineCipher, Cipher,
                       ExponentiationCipher, PowerCipher)
-from .compression import CompressionEncoder
+from .compression import CompressionEncoder, TextCompressionEncoder
 from .encoders import Encoder, TextEncoder
 from .number_theory import (factor, factorize, find_gen, find_gens, gcd,
                             is_gen, is_prime, isqrt, mult_inverse, next_prime,

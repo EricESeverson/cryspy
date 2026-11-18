@@ -1,3 +1,4 @@
+from collections import Counter
 from collections.abc import Hashable, Sequence
 
 from .encoders import Encoder
@@ -84,6 +85,31 @@ class CompressionEncoder(Encoder):
         """
 
         return self.decompress(Blocker(8).deblock_bits(list(data)))
+
+
+class TextCompressionEncoder(CompressionEncoder):
+    """Compress text: UTF-8 encode it, then LZ77 and huffman on the bytes.
+
+    Args:
+        corpus: sample text whose byte frequencies build the huffman tree.
+            If not supplied, assumes a uniform distribution on bytes.
+    """
+
+    def __init__(self, corpus: str | None = None) -> None:
+        letter_weights = None
+        if corpus is not None:
+            counts = Counter(corpus.encode("utf-8"))
+            # + 1 so every byte gets a code, even one the corpus never uses
+            letter_weights = {b: counts[b] + 1 for b in range(256)}
+        super().__init__(bytes(range(256)), letter_weights)
+
+    def encode(self, message: str) -> bytes:
+        """UTF-8 encode, then compress into bytes."""
+        return super().encode(message.encode("utf-8"))
+
+    def decode(self, data: bytes) -> str:
+        """Decompress, then UTF-8 decode."""
+        return super().decode(data).decode("utf-8")
 
 
 class LZ77_Entry:

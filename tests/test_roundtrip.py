@@ -9,7 +9,7 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from cryspy import AdditionCipher, AffineCipher, Blocker, PowerCipher, CompressionEncoder, CryptoStack, TextEncoder, gcd, mult_inverse, vgcd
+from cryspy import TextCompressionEncoder, AdditionCipher, AffineCipher, Blocker, PowerCipher, CompressionEncoder, CryptoStack, TextEncoder, gcd, mult_inverse, vgcd
 import math
 from cryspy.compression import MinHeap
 from cryspy.stack import bits_to_blocks, blocks_to_bits
@@ -182,6 +182,23 @@ def test_blocks_no_padding():
     except ValueError:
         return
     raise AssertionError("expected a ValueError")
+
+
+def test_text_compression_encoder():
+    rng = random.Random(7)
+    corpus = "https://example.com/some/page the quick brown fox " * 20
+    messages = ["", "a", "héllo, wörld 🔐", "https://example.com/a-b-c/d-e-f",
+                "".join(chr(rng.randrange(32, 0x3000)) for _ in range(40))]
+    for enc in [TextCompressionEncoder(), TextCompressionEncoder(corpus)]:
+        for message in messages:
+            assert enc.decode(enc.encode(message)) == message
+    # a corpus that looks like the message compresses it
+    enc = TextCompressionEncoder(corpus)
+    link = "https://example.com/some/page"
+    assert len(enc.compress(link.encode())) < 8 * len(link)
+    stack = CryptoStack(enc, 8, PowerCipher(257), random_bits=4)
+    for message in messages:
+        assert stack.receive(stack.send(message, 5), 5) == message
 
 
 if __name__ == "__main__":
