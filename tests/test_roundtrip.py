@@ -9,7 +9,7 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from cryspy import TextCompressionEncoder, AdditionCipher, AffineCipher, Blocker, PowerCipher, CompressionEncoder, CryptoStack, TextEncoder, gcd, mult_inverse, vgcd
+from cryspy import next_relatively_prime, TextCompressionEncoder, AdditionCipher, AffineCipher, Blocker, PowerCipher, CompressionEncoder, CryptoStack, TextEncoder, gcd, mult_inverse, vgcd
 import math
 from cryspy.compression import MinHeap
 from cryspy.stack import bits_to_blocks, blocks_to_bits
@@ -199,6 +199,24 @@ def test_text_compression_encoder():
     stack = CryptoStack(enc, 8, PowerCipher(257), random_bits=4)
     for message in messages:
         assert stack.receive(stack.send(message, 5), 5) == message
+
+
+def test_next_relatively_prime():
+    assert next_relatively_prime(0, 256) == 1
+    assert next_relatively_prime(1, 256) == 3
+    assert next_relatively_prime(4, 256) == 5
+    assert next_relatively_prime(6, 6) == 7
+    rng = random.Random(8)
+    for _ in range(200):
+        m, n = rng.randrange(2, 10 ** 6), rng.randrange(10 ** 6)
+        k = next_relatively_prime(n, m)
+        assert k > n and math.gcd(k, m) == 1
+        assert all(math.gcd(i, m) != 1 for i in range(n + 1, k))
+    # shared random bits -> power cipher key mod 257
+    shared = 0b10110100
+    key = next_relatively_prime(shared, 256)
+    stack = CryptoStack(TextEncoder(), 8, PowerCipher(257), random_bits=4)
+    assert stack.receive(stack.send("https://example.com", key), key) == "https://example.com"
 
 
 if __name__ == "__main__":
