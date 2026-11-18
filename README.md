@@ -1,3 +1,5 @@
+<p align="center"><img src="assets/cryspy-logo-card.svg" alt="cryspy" width="520"></p>
+
 # cryspy
 
 <!-- Eric: your description of the library goes here. -->
