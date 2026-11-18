@@ -242,3 +242,15 @@ def next_prime(n: int) -> int:
     while not is_prime(i):
         i += 1
     return i
+
+
+def next_relatively_prime(n: int, m: int) -> int:
+    """
+    Returns the next number larger than n that is relatively prime to m.
+    For a power cipher mod p, next_relatively_prime(random bits, p - 1)
+    turns shared random bits into a valid key.
+    """
+    i = n + 1
+    while gcd(i, m) != 1:
+        i += 1
+    return i

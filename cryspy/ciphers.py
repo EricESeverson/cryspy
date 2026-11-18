@@ -149,3 +149,10 @@ class PowerCipher(Cipher):
     def encrypt(self, num: int, key: int) -> int:
         """TODO"""
         return pow(num, key, self.mod)
+
+    def decrypt(self, num: int, key: int) -> int:
+        """Undo encrypt: raise to the inverse of key mod p - 1.
+
+        mod is a prime p, and key must be relatively prime to p - 1.
+        """
+        return pow(num, mult_inverse(key, self.mod - 1), self.mod)
