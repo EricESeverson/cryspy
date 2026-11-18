@@ -9,9 +9,10 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from cryspy import AdditionCipher, AffineCipher, Blocker, CompressionEncoder, CryptoStack, TextEncoder, gcd, mult_inverse, vgcd
+from cryspy import next_relatively_prime, TextCompressionEncoder, AdditionCipher, AffineCipher, Blocker, PowerCipher, CompressionEncoder, CryptoStack, TextEncoder, gcd, mult_inverse, vgcd
 import math
 from cryspy.compression import MinHeap
+from cryspy.stack import bits_to_blocks, blocks_to_bits
 
 ALPHABET = "_ABCDEFGHIJKLMNOPQRSTUVWXYZ.-/"
 
@@ -145,6 +146,92 @@ def test_alphabet_sequence():
         assert enc.decode(enc.encode(message)) == message
     stack = CryptoStack(CompressionEncoder(bytes(range(256))), 16, AffineCipher(2 ** 16))
     assert stack.receive(stack.send(data, (3, 7)), (3, 7)) == data
+
+
+def test_random_bits():
+    # each block: random_bits random bits on top, then message bits
+    rng = random.Random(6)
+    for block_size in [2, 5, 8, 16, 64]:
+        for random_bits in range(0, block_size, max(1, block_size // 4)):
+            blocker = Blocker(block_size, random_bits)
+            for n in range(20):
+                data = bytes(rng.randrange(256) for _ in range(n))
+                ints = blocker.block(data)
+                assert all(0 <= num < 2 ** block_size for num in ints[1:])
+                assert blocker.deblock(ints) == data
+    # the board's example: 4 random bits + 4 message bits, power cipher mod 257
+    stack = CryptoStack(TextEncoder(), 8, PowerCipher(257), random_bits=4)
+    message = "https://example.com"
+    assert stack.receive(stack.send(message, 5), 5) == message
+    # the same message encrypts differently each time
+    assert len({stack.send(message, 5) for _ in range(5)}) > 1
+    for bad in [-1, 8, 9]:
+        try:
+            Blocker(8, bad)
+        except ValueError:
+            continue
+        raise AssertionError("expected a ValueError")
+
+
+def test_blocks_no_padding():
+    # bits_to_blocks and blocks_to_bits only convert; Blocker pads
+    assert bits_to_blocks("00110101", 4) == [3, 5]
+    assert blocks_to_bits([3, 5], 4) == "00110101"
+    try:
+        bits_to_blocks("0011010", 4)
+    except ValueError:
+        return
+    raise AssertionError("expected a ValueError")
+
+
+def test_text_compression_encoder():
+    rng = random.Random(7)
+    corpus = "https://example.com/some/page the quick brown fox " * 20
+    messages = ["", "a", "héllo, wörld 🔐", "https://example.com/a-b-c/d-e-f",
+                "".join(chr(rng.randrange(32, 0x3000)) for _ in range(40))]
+    for enc in [TextCompressionEncoder(), TextCompressionEncoder(corpus)]:
+        for message in messages:
+            assert enc.decode(enc.encode(message)) == message
+    # a corpus that looks like the message compresses it
+    enc = TextCompressionEncoder(corpus)
+    link = "https://example.com/some/page"
+    assert len(enc.compress(link.encode())) < 8 * len(link)
+    stack = CryptoStack(enc, 8, PowerCipher(257), random_bits=4)
+    for message in messages:
+        assert stack.receive(stack.send(message, 5), 5) == message
+
+
+def test_next_relatively_prime():
+    assert next_relatively_prime(0, 256) == 1
+    assert next_relatively_prime(1, 256) == 3
+    assert next_relatively_prime(4, 256) == 5
+    assert next_relatively_prime(6, 6) == 7
+    rng = random.Random(8)
+    for _ in range(200):
+        m, n = rng.randrange(2, 10 ** 6), rng.randrange(10 ** 6)
+        k = next_relatively_prime(n, m)
+        assert k > n and math.gcd(k, m) == 1
+        assert all(math.gcd(i, m) != 1 for i in range(n + 1, k))
+    # shared random bits -> power cipher key mod 257
+    shared = 0b10110100
+    key = next_relatively_prime(shared, 256)
+    stack = CryptoStack(TextEncoder(), 8, PowerCipher(257), random_bits=4)
+    assert stack.receive(stack.send("https://example.com", key), key) == "https://example.com"
+
+
+def test_power_cipher_decrypt():
+    cipher = PowerCipher(257)
+    for key in [3, 5, 181, 255]:
+        assert all(cipher.decrypt(cipher.encrypt(m, key), key) == m
+                   for m in cipher.messages)
+        assert all(cipher.decrypt(c, key) == cipher.brute_force_decrypt(c, key)
+                   for c in cipher.messages)
+    # big p: decrypt no longer tries every message
+    p = 2 ** 127 - 1  # prime
+    key = next_relatively_prime(2 ** 100 + 12345, p - 1)
+    stack = CryptoStack(TextEncoder(), 120, PowerCipher(p), random_bits=24)
+    message = "https://example.com/a-long-ish/link"
+    assert stack.receive(stack.send(message, key), key) == message
 
 
 if __name__ == "__main__":
