@@ -1,7 +1,7 @@
 from collections.abc import Hashable, Sequence
 
 from .encoders import Encoder
-from .stack import bits_to_blocks, blocks_to_bits
+from .stack import Blocker
 
 
 class CompressionEncoder(Encoder):
@@ -70,8 +70,8 @@ class CompressionEncoder(Encoder):
             Compressed and encoded bytes.
         """
 
-        # same padding rule as Blocker, with 8-bit blocks
-        return bytes(bits_to_blocks(self.compress(message), 8))
+        # Blocker pads, with 8-bit blocks
+        return bytes(Blocker(8).block_bits(self.compress(message)))
 
     def decode(self, data: bytes) -> str:
         """Decode and decompress from bytes using LZ77 and huffman encoding.
@@ -83,7 +83,7 @@ class CompressionEncoder(Encoder):
             Decoded and decompressed message.
         """
 
-        return self.decompress(blocks_to_bits(list(data), 8))
+        return self.decompress(Blocker(8).deblock_bits(list(data)))
 
 
 class LZ77_Entry:

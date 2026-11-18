@@ -9,9 +9,10 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from cryspy import AdditionCipher, AffineCipher, Blocker, CompressionEncoder, CryptoStack, TextEncoder, gcd, mult_inverse, vgcd
+from cryspy import AdditionCipher, AffineCipher, Blocker, PowerCipher, CompressionEncoder, CryptoStack, TextEncoder, gcd, mult_inverse, vgcd
 import math
 from cryspy.compression import MinHeap
+from cryspy.stack import bits_to_blocks, blocks_to_bits
 
 ALPHABET = "_ABCDEFGHIJKLMNOPQRSTUVWXYZ.-/"
 
@@ -145,6 +146,42 @@ def test_alphabet_sequence():
         assert enc.decode(enc.encode(message)) == message
     stack = CryptoStack(CompressionEncoder(bytes(range(256))), 16, AffineCipher(2 ** 16))
     assert stack.receive(stack.send(data, (3, 7)), (3, 7)) == data
+
+
+def test_random_bits():
+    # each block: random_bits random bits on top, then message bits
+    rng = random.Random(6)
+    for block_size in [2, 5, 8, 16, 64]:
+        for random_bits in range(0, block_size, max(1, block_size // 4)):
+            blocker = Blocker(block_size, random_bits)
+            for n in range(20):
+                data = bytes(rng.randrange(256) for _ in range(n))
+                ints = blocker.block(data)
+                assert all(0 <= num < 2 ** block_size for num in ints[1:])
+                assert blocker.deblock(ints) == data
+    # the board's example: 4 random bits + 4 message bits, power cipher mod 257
+    stack = CryptoStack(TextEncoder(), 8, PowerCipher(257), random_bits=4)
+    message = "https://example.com"
+    assert stack.receive(stack.send(message, 5), 5) == message
+    # the same message encrypts differently each time
+    assert len({stack.send(message, 5) for _ in range(5)}) > 1
+    for bad in [-1, 8, 9]:
+        try:
+            Blocker(8, bad)
+        except ValueError:
+            continue
+        raise AssertionError("expected a ValueError")
+
+
+def test_blocks_no_padding():
+    # bits_to_blocks and blocks_to_bits only convert; Blocker pads
+    assert bits_to_blocks("00110101", 4) == [3, 5]
+    assert blocks_to_bits([3, 5], 4) == "00110101"
+    try:
+        bits_to_blocks("0011010", 4)
+    except ValueError:
+        return
+    raise AssertionError("expected a ValueError")
 
 
 if __name__ == "__main__":
