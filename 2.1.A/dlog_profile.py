@@ -171,8 +171,10 @@ def test_dlog(*fs, time_limit=1.0, challenges=None, markdown=False, out=None,
         table(rows)
         print("\n</details>", file=out)
     else:
-        for rw in srows:
-            print("  " + "  ".join(rw), file=out)
+        w = [max(len(x[k]) for x in [sh] + srows) for k in range(len(sh))]
+        for rw in [sh] + srows:
+            print("  " + "  ".join(x.rjust(wk) for x, wk in zip(rw, w)),
+                  file=out)
         print(f"\nWhere something went wrong ({len(trouble)} of {len(rows)}):",
               file=out)
         table(trouble)
