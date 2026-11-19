@@ -1,0 +1,24 @@
+# .github/workflows/tests.yml: run the unit tests on every push.
+# Results: the commit gets a green check or red X; details on the run page.
+name: Unit tests
+on:
+  push:
+  workflow_dispatch:
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pytest
+      - name: Run tests
+        run: |
+          set -o pipefail
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          PYTHONPATH=. python -m pytest tests -rA --tb=line -q 2>&1 \
+            | tee -a "$GITHUB_STEP_SUMMARY"; status=$?
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          exit $status
