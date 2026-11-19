@@ -2,11 +2,25 @@
 import cryspy as cp
 import cryspy.number_theory as nt
 
+def gcd(*args):
+    g = 0
+    for x in args:
+        g = cp.gcd(g,x)
+    return g
+
+def lcm(*args):
+    l = 1
+    for x in args:
+        l = (x*l)//gcd(x,l)
+    return l
+
 def dlog_slow(g,h,p):
-    x = 0
-    for i in range(p):
-        if pow(g,i,p)==h:
-            return i
+    count = 0
+    x = g
+    while x != h:
+        x = (x*g)%p
+        count += 1
+    return count
 
 def dlog(g, x, n):
     '''
