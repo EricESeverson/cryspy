@@ -2,19 +2,24 @@
 
     dlog(g, h, p) -> some x with pow(g, x, p) == h
 
-Every function runs on every challenge (no early stop: a bigger p is not
-always harder). Answers are checked with pow, so there is no answer key.
+Challenges run smallest p first. A function that runs out of time on
+give_up challenges in a row is not tried on the rest (they show as
+"skipped"). give_up=None runs every function on every challenge: a bigger p
+is not always harder. Answers are checked with pow, so there is no answer key.
 
 In Colab (after the usual cryspy setup cell):
     !pip install -q line_profiler
     sys.path.insert(0, "/content/cryspy/2.1.A")
     from dlog_profile import test_dlog, line_profile
     test_dlog(dlog_naive, dlog_bsgs)
+    test_dlog(dlog_naive, give_up=None, time_limit=3)    # the full run
     line_profile(dlog_bsgs, challenge=12)
 
 From the command line (this is what the GitHub Action runs):
     python 2.1.A/dlog_profile.py 2.1.A/group1.py --markdown >> $GITHUB_STEP_SUMMARY
 which tests every function in that file whose name starts with "dlog".
+Add --give-up 0 for the full run (Actions tab -> Discrete log profile ->
+Run workflow -> tick "full").
 """
 
 import argparse
@@ -74,33 +79,42 @@ def _biggest(res):
 _FS = []
 
 
-def _column(j, which, time_limit):
+def _column(j, which, time_limit, give_up=None):
     f = _FS[j]
     col = []
+    streak = 0
     for i in which:
         p, g, h = CHALLENGES[i - 1]
+        if give_up and streak >= give_up:
+            col.append((i, p.bit_length(), "skip", "skipped", 0.0))
+            continue
         status, text, sec = check_cell(f, g, h, p, time_limit)
+        streak = streak + 1 if status == "slow" else 0
         col.append((i, p.bit_length(), status, text, sec))
     return col
 
 
 def test_dlog(*fs, time_limit=1.0, challenges=None, markdown=False, out=None,
-              parallel=False):
-    """Run every function on every challenge. Returns {name: [(i, bits,
-    status), ...]}. parallel=True gives each function its own process."""
+              parallel=False, give_up=3):
+    """Run every function on the challenges, smallest p first, dropping a
+    function after give_up time-outs in a row (give_up=None: never drop).
+    Returns {name: [(i, bits, status), ...]}. parallel=True gives each
+    function its own process."""
     out = out or sys.stdout
     fs = _named(fs)
     names = [f.__name__ for f in fs]
-    which = list(challenges or range(1, len(CHALLENGES) + 1))
+    which = sorted(challenges or range(1, len(CHALLENGES) + 1),
+                   key=lambda i: (CHALLENGES[i - 1][0], i))
     _FS[:] = fs
     if parallel and len(fs) > 1:
         import multiprocessing as mp
         with mp.get_context("fork").Pool(len(fs)) as pool:
-            cols = pool.starmap(_column, [(j, which, time_limit)
+            cols = pool.starmap(_column, [(j, which, time_limit, give_up)
                                           for j in range(len(fs))])
     else:
-        cols = [_column(j, which, time_limit) for j in range(len(fs))]
-    mark = {"ok": "✓", "slow": "·", "wrong": "✗", "error": "✗"}
+        cols = [_column(j, which, time_limit, give_up)
+                for j in range(len(fs))]
+    mark = {"ok": "✓", "slow": "·", "wrong": "✗", "error": "✗", "skip": "·"}
     results = {n: [(i, b, s) for i, b, s, *_ in c] for n, c in zip(names, cols)}
 
     def row(r):
@@ -111,7 +125,7 @@ def test_dlog(*fs, time_limit=1.0, challenges=None, markdown=False, out=None,
     head = ["#", *DESCRIBE_HEAD] + [f"`{n}`" if markdown else n for n in names]
     rows = [row(r) for r in range(len(which))]
     trouble = [rw for r, rw in enumerate(rows)
-               if any(c[r][2] != "ok" for c in cols)]
+               if any(c[r][2] not in ("ok", "skip") for c in cols)]
 
     def table(rs):
         if markdown:
@@ -128,14 +142,14 @@ def test_dlog(*fs, time_limit=1.0, challenges=None, markdown=False, out=None,
 
     # summary first
     sh = ["function", "right", "wrong", "errors", f"over {time_limit:g} s",
-          SUMMARY_BIGGEST]
+          "skipped", SUMMARY_BIGGEST]
     srows = []
     for n in names:
         st = [s for _, _, s in results[n]]
         srows.append([f"`{n}`" if markdown else n,
                       f"{st.count('ok')} of {len(st)}", str(st.count("wrong")),
                       str(st.count("error")), str(st.count("slow")),
-                      _biggest(results[n])])
+                      str(st.count("skip")), _biggest(results[n])])
     if markdown:
         print("| " + " | ".join(sh) + " |\n|---|" + "---:|" * (len(sh) - 1),
               file=out)
@@ -145,6 +159,11 @@ def test_dlog(*fs, time_limit=1.0, challenges=None, markdown=False, out=None,
               f"{len(rows)} cases)\n", file=out)
         print("✓ right, with its time · stopped at the time limit "
               "✗ wrong answer or error\n", file=out)
+        if any(c[r][2] == "skip" for c in cols for r in range(len(rows))):
+            print(f"A function that ran out of time on {give_up} challenges "
+                  "in a row was not tried on the bigger ones (skipped). For "
+                  "the full run: Actions tab, Discrete log profile, Run "
+                  "workflow, tick full.\n", file=out)
         table(trouble) if trouble else print("Nothing: every function "
                                              "was right every time.", file=out)
         print(f"\n<details><summary><b>All {len(rows)} cases</b></summary>\n",
@@ -232,6 +251,9 @@ if __name__ == "__main__":
     ap.add_argument("--time-limit", type=float, default=1.0)
     ap.add_argument("--markdown", action="store_true")
     ap.add_argument("--no-lines", action="store_true")
+    ap.add_argument("--give-up", type=int, default=3,
+                    help="drop a function after this many time-outs in a "
+                         "row; 0 runs everything")
     a = ap.parse_args()
     mod, fs = load_group(a.group_file)
     fs.sort(key=lambda m: m.__code__.co_firstlineno)   # file order
@@ -244,9 +266,11 @@ if __name__ == "__main__":
         print(f"## Discrete log profile: `{os.path.basename(a.group_file)}`\n")
         print(f"Functions found: {', '.join(f'`{f.__name__}`' for f in fs)}. "
               f"Each call is stopped after {a.time_limit:g} s.\n")
+        if not a.give_up:
+            print("Full run: every function on every challenge.\n")
     t0 = time.time()
     res, cols = test_dlog(*fs, time_limit=a.time_limit, markdown=md,
-                          parallel=True)
+                          parallel=True, give_up=a.give_up or None)
     if not a.no_lines:
         print("\n### Line by line (click to open)\n" if md else "\nLine by line")
         print("Each function once, on the biggest challenge it solved in under "
