@@ -30,6 +30,17 @@ sys.path.insert(0, HERE)
 
 from cryspy.profiling import run, short, _named
 
+
+def fmt_time(s):
+    """12 µs, 3.4 ms, 1.20 s."""
+    if s < 1e-6:
+        return "< 1 µs"
+    if s < 1e-3:
+        return f"{s * 1e6:.0f} µs"
+    if s < 1:
+        return f"{s * 1e3:.1f} ms"
+    return f"{s:.2f} s"
+
 with open(os.path.join(HERE, "prime_cases.json")) as f:
     CASES = [(int(c["n"]), c["prime"]) for c in json.load(f)]
 PRIMES_BELOW_200 = {n for n in range(2, 200)
@@ -44,9 +55,9 @@ def _small(f, time_limit):
     if status != "ok":
         return status, (bad if status == "error" else f"over {time_limit:g} s")
     if bad:
-        return "wrong", f"wrong at {', '.join(map(str, bad[:4]))}" + (
+        return "wrong", f"wrong at n = {', '.join(map(str, bad[:4]))}" + (
             "..." if len(bad) > 4 else "")
-    return "ok", f"{seconds:.4f}"
+    return "ok", fmt_time(seconds)
 
 
 def check_cell(f, n, answer, time_limit):
@@ -56,8 +67,25 @@ def check_cell(f, n, answer, time_limit):
     if status == "error":
         return "error", x, seconds
     if x is answer or (type(x) is bool and x == answer):
-        return "ok", f"{seconds:.4f}", seconds
-    return "wrong", f"wrong: {short(x)}", seconds
+        return "ok", fmt_time(seconds), seconds
+    return "wrong", f"said {short(x)}", seconds
+
+
+DESCRIBE_HEAD = ["bits", "n", "prime?"]
+SUMMARY_BIGGEST = "biggest prime it got right"
+
+
+def _describe(i):
+    if i == 0:
+        return ["", "every n from 0 to 199", ""]
+    n, answer = CASES[i - 1]
+    return [str(n.bit_length()), short(n), "yes" if answer else "no"]
+
+
+def _biggest(res):
+    bits = [CASES[i - 1][0].bit_length() for i, _, s in res
+            if s == "ok" and i and CASES[i - 1][1]]
+    return f"{max(bits)} bits" if bits else "none"
 
 
 _FS = []
@@ -68,11 +96,11 @@ def _column(j, which, time_limit):
     col = []
     for i in which:
         if i == 0:
-            col.append((0, 8, *_small(f, time_limit)))
+            col.append((0, 8, *_small(f, time_limit), 0.0))
             continue
         n, answer = CASES[i - 1]
-        status, text, _ = check_cell(f, n, answer, time_limit)
-        col.append((i, n.bit_length(), status, text))
+        status, text, sec = check_cell(f, n, answer, time_limit)
+        col.append((i, n.bit_length(), status, text, sec))
     return col
 
 
@@ -93,31 +121,62 @@ def test_primes(*fs, time_limit=1.0, cases=None, markdown=False, out=None,
     else:
         cols = [_column(j, which, time_limit) for j in range(len(fs))]
     mark = {"ok": "✓", "slow": "·", "wrong": "✗", "error": "✗"}
-    if markdown:
-        print("| # | bits | " + " | ".join(f"`{n}`" for n in names) + " |",
-              file=out)
-        print("|---:|---:|" + "---|" * len(names), file=out)
-    for r, i in enumerate(which):
-        bits = CASES[i - 1][0].bit_length() if i else "0-199"
-        cells = [f"{mark[c[r][2]]} {c[r][3]}" for c in cols]
-        if markdown:
-            print(f"| {i} | {bits} | " + " | ".join(cells) + " |", file=out)
-        else:
-            print(f"  #{i:<3} {bits:>5} bits  "
-                  + "  ".join(f"{c:>18}" for c in cells), file=out)
-    results = {n: [(i, b, s) for i, b, s, _ in c] for n, c in zip(names, cols)}
+    results = {n: [(i, b, s) for i, b, s, *_ in c] for n, c in zip(names, cols)}
 
-    print("\n**Summary**\n" if markdown else "\nSummary", file=out)
+    def row(r):
+        i = which[r]
+        cells = [f"{mark[c[r][2]]} {c[r][3]}" for c in cols]
+        return [str(i), *_describe(i)] + cells
+
+    head = ["#", *DESCRIBE_HEAD] + [f"`{n}`" if markdown else n for n in names]
+    rows = [row(r) for r in range(len(which))]
+    trouble = [rw for r, rw in enumerate(rows)
+               if any(c[r][2] != "ok" for c in cols)]
+
+    def table(rs):
+        if markdown:
+            print("| " + " | ".join(head) + " |", file=out)
+            print("|" + "---:|" * len(DESCRIBE_HEAD) + "---:|"
+                  + "---|" * len(names), file=out)
+            for rw in rs:
+                print("| " + " | ".join(rw) + " |", file=out)
+        else:
+            w = [max(len(x[k]) for x in [head] + rs) for k in range(len(head))]
+            for rw in [head] + rs:
+                print("  " + "  ".join(x.rjust(wk) for x, wk in zip(rw, w)),
+                      file=out)
+
+    # summary first
+    sh = ["function", "right", "wrong", "errors", f"over {time_limit:g} s",
+          SUMMARY_BIGGEST]
+    srows = []
     for n in names:
-        ok = [b for i, b, s in results[n] if s == "ok"]
-        okp = [CASES[i - 1][0].bit_length() for i, b, s in results[n]
-               if s == "ok" and i and CASES[i - 1][1]]
-        bad = sum(s in ("wrong", "error") for _, _, s in results[n])
-        slow = sum(s == "slow" for _, _, s in results[n])
-        line = (f"{n}: right {len(ok)} of {len(results[n])}, "
-                f"{slow} over {time_limit:g} s, {bad} wrong or errors; "
-                f"biggest prime answered right: {max(okp, default=0)} bits")
-        print(f"- {line}" if markdown else f"  {line}", file=out)
+        st = [s for _, _, s in results[n]]
+        srows.append([f"`{n}`" if markdown else n,
+                      f"{st.count('ok')} of {len(st)}", str(st.count("wrong")),
+                      str(st.count("error")), str(st.count("slow")),
+                      _biggest(results[n])])
+    if markdown:
+        print("| " + " | ".join(sh) + " |\n|---|" + "---:|" * (len(sh) - 1),
+              file=out)
+        for rw in srows:
+            print("| " + " | ".join(rw) + " |", file=out)
+        print(f"\n### Where something went wrong ({len(trouble)} of "
+              f"{len(rows)} cases)\n", file=out)
+        print("✓ right, with its time · stopped at the time limit "
+              "✗ wrong answer or error\n", file=out)
+        table(trouble) if trouble else print("Nothing: every function "
+                                             "was right every time.", file=out)
+        print(f"\n<details><summary><b>All {len(rows)} cases</b></summary>\n",
+              file=out)
+        table(rows)
+        print("\n</details>", file=out)
+    else:
+        for rw in srows:
+            print("  " + "  ".join(rw), file=out)
+        print(f"\nWhere something went wrong ({len(trouble)} of {len(rows)}):",
+              file=out)
+        table(trouble)
     return results, cols
 
 
@@ -140,7 +199,7 @@ def line_profile(f, case, extra=(), markdown=False, out=None,
     n, _ = CASES[case - 1]
     status, x, seconds = run(lp(f), (n,), time_limit)
     title = (f"{f.__name__} on case #{case} ({n.bit_length()} bits): "
-             f"{status}, {seconds:.3f} s with the profiler on")
+             f"{status}, {fmt_time(seconds)} with the profiler on")
     print(f"\n<details><summary><b>{title}</b></summary>\n" if markdown
           else f"\n{title}", file=out)
     stats = lp.get_stats()
@@ -202,22 +261,22 @@ if __name__ == "__main__":
               f"`{a.group_file}` whose name starts with `is_prime`.")
         sys.exit(0)
     if md:
-        print(f"## Primality profile: `{a.group_file}`\n")
+        print(f"## Primality profile: `{os.path.basename(a.group_file)}`\n")
         print(f"Functions found: {', '.join(f'`{f.__name__}`' for f in fs)}. "
-              f"Each call is stopped after {a.time_limit:g} s. "
-              "✓ seconds · too slow ✗ wrong\n")
+              f"Each call is stopped after {a.time_limit:g} s.\n")
     t0 = time.time()
     res, cols = test_primes(*fs, time_limit=a.time_limit, markdown=md,
                           parallel=True)
     if not a.no_lines:
-        print("\n### Line by line\n" if md else "\nLine by line")
-        print("Each function once, on the biggest case it got right in under "
+        print("\n### Line by line (click to open)\n" if md else "\nLine by line")
+        print("Each function once, on the biggest prime it got right in under "
               f"{a.time_limit / 10:g} s. Hits are exact and the same on every "
               "computer; % is the share of that function's own time.\n"
               if md else "")
         for f, col in zip(fs, cols):
-            quick = [(b, i) for i, b, s, t in col
-                     if i and s == "ok" and float(t) < a.time_limit / 10]
+            quick = [(b, i) for i, b, s, t, sec in col
+                     if i and CASES[i - 1][1] and s == "ok"
+                     and sec < a.time_limit / 10]
             if quick:
                 line_profile(f, max(quick)[1], markdown=md)
     print(f"\n_Total {time.time() - t0:.0f} s._" if md
