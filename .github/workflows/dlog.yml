@@ -7,6 +7,11 @@ on:
     branches: ["2.1.A-group*"]
     paths: ["2.1.A/**"]
   workflow_dispatch:
+    inputs:
+      full:
+        description: "Full run: every function on every challenge, 3 s each (slow)"
+        type: boolean
+        default: false
 jobs:
   profile:
     runs-on: ubuntu-latest
@@ -20,5 +25,10 @@ jobs:
       - name: Profile this group's dlog functions
         run: |
           n="${GITHUB_REF_NAME##*group}"
+          if [ "${{ inputs.full }}" = "true" ]; then
+            opts="--time-limit 3 --give-up 0"
+          else
+            opts="--time-limit 1 --give-up 3"
+          fi
           PYTHONPATH=. python 2.1.A/dlog_profile.py "2.1.A/group$n.py" \
-            --markdown --time-limit 3 >> "$GITHUB_STEP_SUMMARY"
+            --markdown $opts >> "$GITHUB_STEP_SUMMARY"
