@@ -28,7 +28,7 @@ jobs:
           if [ "${{ inputs.full }}" = "true" ]; then
             opts="--time-limit 3 --give-up 0"
           else
-            opts="--time-limit 1 --give-up 3"
+            opts="--time-limit 2 --give-up 3"
           fi
           PYTHONPATH=. python 2.1.A/dlog_profile.py "2.1.A/group$n.py" \
             --markdown $opts >> "$GITHUB_STEP_SUMMARY"
