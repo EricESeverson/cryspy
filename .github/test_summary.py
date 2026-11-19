@@ -2,46 +2,65 @@
 
 Used by .github/workflows/tests.yml:
     python .github/test_summary.py report.xml >> $GITHUB_STEP_SUMMARY
+A test that records a "call" property (one row per call, see
+tests/test_gcd_lcm.py) gets a row: call, right answer, result.
 """
-import ast
 import sys
 import xml.etree.ElementTree as ET
 
 
-def checks(path, name):
-    """The assert lines of one test, as written in the test file."""
-    try:
-        src = open(path).read()
-        for node in ast.walk(ast.parse(src)):
-            if isinstance(node, ast.FunctionDef) and node.name == name:
-                lines = [ast.get_source_segment(src, n) for n in ast.walk(node)
-                         if isinstance(n, ast.Assert)]
-                return "<br>".join(f"`{l}`" for l in lines[:3]) + (
-                    " ..." if len(lines) > 3 else "")
-    except (OSError, SyntaxError):
-        pass
-    return ""
+def fmt_time(s):
+    """Three significant figures: 420 ns, 3.17 µs, 41.2 ms, 1.22 s."""
+    for scale, unit in ((1e-6, "ns"), (1e-3, "µs"), (1, "ms")):
+        if s < scale:
+            v = s / scale * 1000
+            break
+    else:
+        v, unit = s, "s"
+    d = 2 if v < 10 else 1 if v < 100 else 0
+    return f"{v:.{d}f} {unit}"
 
 
-rows = []
+def cell(x):
+    return str(x).replace("|", "\\|")
+
+
+calls, others = [], []
 for case in ET.parse(sys.argv[1]).iter("testcase"):
-    path = case.get("classname", "").replace(".", "/") + ".py"
-    name = case.get("name")
+    props = {p.get("name"): p.get("value") for p in case.iter("property")}
     bad = case.find("failure")
     if bad is None:
         bad = case.find("error")
     msg = "" if bad is None else (bad.get("message") or "").splitlines()[0]
-    msg = msg.replace("|", "\\|")[:120]
-    rows.append((bad is not None, path, name, msg))
+    for prefix in ("AssertionError: ", "assert "):
+        msg = msg[len(prefix):] if msg.startswith(prefix) else msg
+    msg = msg.split("\nassert")[0].split(" assert ")[0][:120]
+    if "call" in props:
+        if bad is None:
+            result = f"✓ {fmt_time(float(props.get('seconds', 0)))}"
+        else:
+            result = f"✗ {msg}"
+        calls.append((bad is None, props["call"], props["expected"], result))
+    else:
+        others.append((bad is None, case.get("classname", "").split(".")[-1],
+                       case.get("name"), msg))
 
-failed = [r for r in rows if r[0]]
-passed = [r for r in rows if not r[0]]
-print(f"## Unit tests: {len(passed)} passed, {len(failed)} failed\n")
-if failed:
-    print("| test | what it checks | what happened |\n|---|---|---|")
-    for _, path, name, msg in failed:
-        print(f"| ✗ `{name}` | {checks(path, name)} | {msg} |")
-print(f"\n<details><summary>{len(passed)} passed</summary>\n")
-for _, path, name, _ in passed:
-    print(f"- ✓ `{path.split('/')[-1]}` `{name}`")
-print("\n</details>")
+ok = sum(c[0] for c in calls) + sum(o[0] for o in others)
+total = len(calls) + len(others)
+print(f"## Unit tests: {ok} of {total} right\n")
+if calls:
+    print("✓ right, with its time ✗ wrong answer or error\n")
+    print("| call | right answer | result |\n|---|---:|---|")
+    for _, c, e, r in calls:
+        print(f"| `{cell(c)}` | {cell(e)} | {cell(r)} |")
+bad_others = [o for o in others if not o[0]]
+if bad_others:
+    print("\n**Other tests that failed**\n")
+    for _, mod, name, msg in bad_others:
+        print(f"- ✗ `{mod}` `{name}`: {cell(msg)}")
+good = [o for o in others if o[0]]
+if good:
+    print(f"\n<details><summary>{len(good)} other tests passed</summary>\n")
+    for _, mod, name, _ in good:
+        print(f"- ✓ `{mod}` `{name}`")
+    print("\n</details>")
