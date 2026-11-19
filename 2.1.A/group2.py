@@ -1,6 +1,6 @@
 # 2.1.A Group 2
 import cryspy as cp
-
+import cryspy.number_theory as nt
 
 def dlog_slow(g,h,p):
     x = 0
