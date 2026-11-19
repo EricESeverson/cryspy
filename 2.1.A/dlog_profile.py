@@ -253,7 +253,8 @@ def load_group(path):
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("group_file")
+    ap.add_argument("group_files", nargs="+",
+                    help="one group file, or several to compare side by side")
     ap.add_argument("--time-limit", type=float, default=1.0)
     ap.add_argument("--markdown", action="store_true")
     ap.add_argument("--no-lines", action="store_true")
@@ -261,21 +262,28 @@ if __name__ == "__main__":
                     help="drop a function after this many time-outs in a "
                          "row; 0 runs everything")
     a = ap.parse_args()
-    mod, fs = load_group(a.group_file)
-    fs.sort(key=lambda m: m.__code__.co_firstlineno)   # file order
+    a.group_file = ", ".join(os.path.basename(f) for f in a.group_files)
+    fs, labels = [], []
+    for path in a.group_files:
+        mod, found = load_group(path)
+        found.sort(key=lambda m: m.__code__.co_firstlineno)   # file order
+        fs += found
+        labels += [f"{mod.__name__}.{f.__name__}" if len(a.group_files) > 1
+                   else f.__name__ for f in found]
     md = a.markdown
     if not fs:
         print(f"No functions yet: this tests every function in "
               f"`{a.group_file}` whose name starts with `dlog`.")
         sys.exit(0)
     if md:
-        print(f"## Discrete log profile: `{os.path.basename(a.group_file)}`\n")
-        print(f"Functions found: {', '.join(f'`{f.__name__}`' for f in fs)}. "
+        kind = "comparison" if len(a.group_files) > 1 else "profile"
+        print(f"## Discrete log {kind}: `{a.group_file}`\n")
+        print(f"Functions found: {', '.join(f'`{n}`' for n in labels)}. "
               f"Each call is stopped after {a.time_limit:g} s.\n")
         if not a.give_up:
             print("Full run: every function on every challenge.\n")
     t0 = time.time()
-    res, cols = test_dlog(*fs, time_limit=a.time_limit, markdown=md,
+    res, cols = test_dlog(dict(zip(labels, fs)), time_limit=a.time_limit, markdown=md,
                           parallel=True, give_up=a.give_up or None)
     if not a.no_lines:
         print("\n### Line by line (click to open)\n" if md else "\nLine by line")

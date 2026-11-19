@@ -1,0 +1,33 @@
+# All three groups' dlog functions side by side, rerun on every push to any
+# 2.1.A group branch. Latest comparison: Actions tab -> "Discrete log
+# comparison" -> newest run -> Summary.
+name: Discrete log comparison
+on:
+  push:
+    branches: ["2.1.A-group*"]
+    paths: ["2.1.A/**"]
+  workflow_dispatch:
+concurrency:
+  group: dlog-compare
+  cancel-in-progress: true
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Fetch every group's latest file
+        run: |
+          mkdir -p compare
+          for n in 1 2 3; do
+            git fetch --depth=1 origin "2.1.A-group$n"
+            git show "FETCH_HEAD:2.1.A/group$n.py" > "compare/group$n.py"
+          done
+      - name: Compare
+        run: |
+          PYTHONPATH=. python 2.1.A/dlog_profile.py compare/group1.py \
+            compare/group2.py compare/group3.py --markdown --no-lines \
+            --time-limit 2 --give-up 3 >> "$GITHUB_STEP_SUMMARY"
