@@ -1,5 +1,5 @@
 # .github/workflows/tests.yml: run the unit tests on every push.
-# Results: the commit gets a green check or red X; details on the run page.
+# Results: the commit gets a green check or red X; the run page shows a table.
 name: Unit tests
 on:
   push:
@@ -16,9 +16,8 @@ jobs:
       - run: pip install pytest
       - name: Run tests
         run: |
-          set -o pipefail
-          echo '```' >> "$GITHUB_STEP_SUMMARY"
-          PYTHONPATH=. python -m pytest tests -rA --tb=line -q 2>&1 \
-            | tee -a "$GITHUB_STEP_SUMMARY"; status=$?
-          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          status=0
+          PYTHONPATH=. python -m pytest tests -q --tb=line \
+            --junitxml=report.xml || status=$?
+          python .github/test_summary.py report.xml >> "$GITHUB_STEP_SUMMARY"
           exit $status
