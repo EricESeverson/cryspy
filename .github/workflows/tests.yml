@@ -1,0 +1,25 @@
+# .github/workflows/tests.yml: run the unit tests on every push.
+# (Skips the Unit 1 test data checks: packaging only, not class code.)
+# Results: the commit gets a green check or red X; the run page shows a table.
+name: Unit tests
+on:
+  push:
+  workflow_dispatch:
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pytest
+      - name: Run tests
+        run: |
+          status=0
+          PYTHONPATH=. python -m pytest tests -q --tb=line \
+            --ignore=tests/test_unit1_test_data.py -o junit_family=xunit1 \
+            --junitxml=report.xml || status=$?
+          python .github/test_summary.py report.xml >> "$GITHUB_STEP_SUMMARY"
+          exit $status
