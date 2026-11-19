@@ -215,8 +215,12 @@ def line_profile(f, challenge, extra=(), markdown=False, out=None,
         ftime = sum(t for _, t in lines.values()) or 1
         blocks.append((m, lines, ftime))
     top = max((ft for m, _, ft in blocks if m is f), default=1)
+    ans = x if status == "ok" else status
+    call = [f"{f.__name__}(g, h, p) with", f"    g = {g}", f"    h = {h}",
+            f"    p = {p}", f"returned {ans}"]
     if markdown:
         print("```", file=out)
+    print("\n".join(call) + "\n", file=out)
     for m, lines, ftime in blocks:
         if m.__module__ != f.__module__ and ftime < 0.05 * top:
             continue          # a cryspy helper that cost next to nothing
