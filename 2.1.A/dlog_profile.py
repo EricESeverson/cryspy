@@ -32,14 +32,15 @@ from cryspy.profiling import run, short, _named
 
 
 def fmt_time(s):
-    """12 µs, 3.4 ms, 1.20 s."""
-    if s < 1e-6:
-        return "< 1 µs"
-    if s < 1e-3:
-        return f"{s * 1e6:.0f} µs"
-    if s < 1:
-        return f"{s * 1e3:.1f} ms"
-    return f"{s:.2f} s"
+    """Three significant figures: 420 ns, 3.17 µs, 41.2 ms, 1.22 s."""
+    for scale, unit in ((1e-6, "ns"), (1e-3, "µs"), (1, "ms")):
+        if s < scale:
+            v = s / scale * 1000
+            break
+    else:
+        v, unit = s, "s"
+    d = 2 if v < 10 else 1 if v < 100 else 0
+    return f"{v:.{d}f} {unit}"
 
 with open(os.path.join(HERE, "dlog_challenges.json")) as f:
     CHALLENGES = [(c["p"], c["g"], c["h"]) for c in json.load(f)]
