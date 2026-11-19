@@ -19,7 +19,7 @@ jobs:
         run: |
           status=0
           PYTHONPATH=. python -m pytest tests -q --tb=line \
-            --ignore=tests/test_unit1_test_data.py \
+            --ignore=tests/test_unit1_test_data.py -o junit_family=xunit1 \
             --junitxml=report.xml || status=$?
           python .github/test_summary.py report.xml >> "$GITHUB_STEP_SUMMARY"
           exit $status
