@@ -1,4 +1,5 @@
 # .github/workflows/tests.yml: run the unit tests on every push.
+# (Skips the Unit 1 test data checks: packaging only, not class code.)
 # Results: the commit gets a green check or red X; the run page shows a table.
 name: Unit tests
 on:
@@ -18,6 +19,7 @@ jobs:
         run: |
           status=0
           PYTHONPATH=. python -m pytest tests -q --tb=line \
+            --ignore=tests/test_unit1_test_data.py \
             --junitxml=report.xml || status=$?
           python .github/test_summary.py report.xml >> "$GITHUB_STEP_SUMMARY"
           exit $status
