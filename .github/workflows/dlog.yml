@@ -1,0 +1,24 @@
+# .github/workflows/dlog.yml on each 2.1.A-groupN branch.
+# Every push that touches 2.1.A/ runs the profiler on that group's file and
+# puts the report on the run's page (Actions tab -> the run -> Summary).
+name: Discrete log profile
+on:
+  push:
+    branches: ["2.1.A-group*"]
+    paths: ["2.1.A/**"]
+  workflow_dispatch:
+jobs:
+  profile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install line_profiler
+      - name: Profile this group's dlog functions
+        run: |
+          n="${GITHUB_REF_NAME##*group}"
+          PYTHONPATH=. python 2.1.A/dlog_profile.py "2.1.A/group$n.py" \
+            --markdown --time-limit 3 >> "$GITHUB_STEP_SUMMARY"
