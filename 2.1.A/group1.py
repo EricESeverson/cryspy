@@ -1,5 +1,13 @@
 # 2.1.A Group 1
 import cryspy as cp
+import cryspy.number_theory as nt
+
+
+def _check_dlog(xs, ys, k, p):
+    for (x, y) in zip(xs, ys):
+        if pow(x, k, p) != y:
+            return False
+    return True
 
 
 def dlog_slowest(g, h, p):
