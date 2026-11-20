@@ -3,19 +3,21 @@ import cryspy as cp
 import cryspy.number_theory as nt
 
 
-def _check_dlog(xs, ys, k, p):
-    for (x, y) in zip(xs, ys):
-        if pow(x, k, p) != y:
-            return False
-    return True
-
-
 def dlog_slowest(g, h, p):
     for i in range(p):
         if pow(g, i, p) == h:
             return i
 
-def dlog(x, y, p):
+def check_dlog(xs, ys, k, p):
+    """Returns whether x_i ** k = y_i mod p for all i.
+    """
+
+    for (x, y) in zip(xs, ys):
+        if pow(x, k, p) != y:
+            return False
+    return True
+
+def _baby_step_giant_step(x, y, p):
     d = nt.isqrt(p)
     x_hat = pow(x, d, p)
     # x^e1 * x_hat ^ e2 \equiv y mod p
@@ -29,8 +31,23 @@ def dlog(x, y, p):
         j = pow(x, e1, p)
         if j in seen:
             k = e1 + seen[j] * d
-            if (_check_dlog(xs, ys, k, p)):
-                return k
+            yield k
+
+def dlog(x, y, p, 
+         algorithm="baby step giant step",
+         all_solutions=False,
+    ):
+    if algorithm == "baby step giant step":
+        generator = _baby_step_giant_step(x, y, p)
+    else:
+        raise NotImplementedError()
+        
+    if not all_solutions:
+        return generator.__next__()
+
+    return generator
+
+
 
 
 def _gcd(a, b):
