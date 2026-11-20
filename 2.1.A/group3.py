@@ -3,21 +3,20 @@ import cryspy as cp
 import math
 
 
-
 def gcd(*nums):
     if len(nums) == 0:
         return 0
     elif len(nums) == 1:
-        return nums[0]
+        return abs(nums[0])
     elif len(nums) == 2:
         a,b = nums
         if b == 0: 
             return a
 
-        return gcd(b, a % b)
+        return abs(gcd(b, a % b))
 
     else:
-        return gcd(gcd(nums[0], nums[1]), *nums[2:])
+        return abs(gcd(gcd(nums[0], nums[1]), *nums[2:])
 
 
 def lcm(*ints):
