@@ -2,8 +2,13 @@
 
 Run: python -m pytest tests/test_gcd_lcm.py
 Right answers agree with Python's math.gcd / math.lcm.
+On a group branch, the group's own gcd / lcm in 2.1.A/groupN.py are tested
+if it defines them; otherwise cryspy's. Each row names which one.
 """
+import glob
+import importlib.util
 import math
+import os
 import random
 import time
 
@@ -39,11 +44,38 @@ CASES = [
 ]
 
 
+def _group_module():
+    """The branch's 2.1.A/groupN.py, or None (on main, or if it won't load)."""
+    here = os.path.dirname(os.path.abspath(__file__))
+    paths = sorted(glob.glob(os.path.join(here, "..", "2.1.A", "group*.py")))
+    if not paths:
+        return None, None
+    name = os.path.splitext(os.path.basename(paths[0]))[0]
+    try:
+        spec = importlib.util.spec_from_file_location(name, paths[0])
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod, None
+    except Exception as e:  # report it on every row rather than crash
+        return None, f"{name}.py failed to load: {type(e).__name__}: {e}"
+
+
+GROUP, LOAD_ERROR = _group_module()
+
+
+def find(name):
+    """(label, function): the group's own if defined, else cryspy's."""
+    if GROUP is not None and callable(getattr(GROUP, name, None)):
+        return GROUP.__name__, getattr(GROUP, name)
+    return "cryspy", getattr(nt, name, None)
+
+
 def call(name, args):
-    s = f"{name}({', '.join(short(a) for a in args)})"
-    if len(s) > 60:
+    who = find(name)[0]
+    s = f"{who}.{name}({', '.join(short(a) for a in args)})"
+    if len(s) > 70:
         digits = max(len(str(abs(a))) for a in args)
-        s = f"{name}({len(args)} numbers, up to {digits} digits)"
+        s = f"{who}.{name}({len(args)} numbers, up to {digits} digits)"
     return s
 
 
@@ -52,8 +84,9 @@ def call(name, args):
 def test_gcd_lcm(name, args, expected, record_property):
     record_property("call", call(name, args))
     record_property("expected", short(expected))
-    f = getattr(nt, name, None)
-    assert f is not None, f"cryspy has no {name} yet"
+    assert LOAD_ERROR is None, LOAD_ERROR
+    who, f = find(name)
+    assert f is not None, f"no {name} yet (not in your group file or cryspy)"
     start = time.perf_counter()
     got = f(*args)
     record_property("seconds", time.perf_counter() - start)
