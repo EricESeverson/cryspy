@@ -15,11 +15,14 @@ def lcm(*args):
     return l
 
 def dlog_slow(g,h,p):
-    count = 0
-    x = g
-    while x != h:
+    count = 1
+    x = g%p
+    h = h%p
+    while x != h and count < p:
         x = (x*g)%p
         count += 1
+    if count == p:
+        return None
     return count
 
 def dlog(g, x, n):
