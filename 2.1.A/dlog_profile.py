@@ -3,9 +3,12 @@
     dlog(g, h, p) -> some x with pow(g, x, p) == h
 
 Challenges run smallest p first. A function that runs out of time on
-give_up challenges in a row is not tried on the rest (they show as
-"skipped"). give_up=None runs every function on every challenge: a bigger p
-is not always harder. Answers are checked with pow, so there is no answer key.
+give_up challenges in a row gets only a quick try (QUICK_TRY seconds) on the
+rest, since a bigger p is not always harder; a quick try that fails shows as
+"skipped". give_up=None gives every challenge the full time. Answers are
+checked with pow, so there is no answer key. Each function's peak memory is
+measured once, on the biggest challenge it solved in under a twentieth of
+the time limit (measuring memory slows a loop 10-20x).
 
 In Colab (after the usual cryspy setup cell):
     !pip install -q line_profiler
@@ -33,7 +36,9 @@ import time
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
-from cryspy.profiling import run, short, _named
+from cryspy.profiling import run, short, _named, TooSlow
+
+QUICK_TRY = 0.1     # seconds, after a function has given up
 
 
 def fmt_time(s):
@@ -51,15 +56,49 @@ with open(os.path.join(HERE, "dlog_challenges.json")) as f:
     CHALLENGES = [(c["p"], c["g"], c["h"]) for c in json.load(f)]
 
 
+def fmt_bytes(b):
+    for unit in ("B", "KB", "MB"):
+        if b < 1024:
+            return f"{b:.0f} {unit}" if unit == "B" else f"{b:.1f} {unit}"
+        b /= 1024
+    return f"{b:.2f} GB"
+
+
 def check_cell(f, g, h, p, time_limit):
-    status, x, seconds = run(f, (g, h, p), time_limit)
+    """Returns (status, cell text, seconds, error message or None)."""
+    errors = []
+
+    def call(*args):
+        try:
+            return f(*args)
+        except TooSlow:
+            raise
+        except Exception as e:
+            errors.append(f"{type(e).__name__}: {e}")
+            raise
+
+    status, x, seconds = run(call, (g, h, p), time_limit)
     if status == "slow":
-        return "slow", f"over {time_limit:g} s", seconds
+        return "slow", f"over {time_limit:g} s", seconds, None
     if status == "error":
-        return "error", x, seconds
+        msg = errors[0] if errors else x
+        return "error", x, seconds, msg[:200]
     if isinstance(x, int) and pow(g, x, p) == h:
-        return "ok", fmt_time(seconds), seconds
-    return "wrong", f"gave {short(x)}", seconds
+        return "ok", fmt_time(seconds), seconds, None
+    return "wrong", f"gave {short(x)}", seconds, None
+
+
+def peak_memory(f, i, time_limit):
+    """Peak memory (bytes) of one call f(g, h, p) on challenge i."""
+    import tracemalloc
+    p, g, h = CHALLENGES[i - 1]
+    tracemalloc.start()
+    try:
+        status, _, _ = run(f, (g, h, p), time_limit)
+        peak = tracemalloc.get_traced_memory()[1]
+    finally:
+        tracemalloc.stop()
+    return peak if status == "ok" else None
 
 
 DESCRIBE_HEAD = ["bits", "p"]
@@ -80,18 +119,35 @@ _FS = []
 
 
 def _column(j, which, time_limit, give_up=None):
+    """One function on every challenge. Returns (col, memory) where col has
+    (i, bits, status, text, seconds, error) per challenge and memory is
+    (peak bytes or None, challenge) for its biggest solve, or None."""
     f = _FS[j]
     col = []
     streak = 0
     for i in which:
         p, g, h = CHALLENGES[i - 1]
         if give_up and streak >= give_up:
-            col.append((i, p.bit_length(), "skip", "skipped", 0.0))
-            continue
-        status, text, sec = check_cell(f, g, h, p, time_limit)
-        streak = streak + 1 if status == "slow" else 0
-        col.append((i, p.bit_length(), status, text, sec))
-    return col
+            status, text, sec, err = check_cell(f, g, h, p, QUICK_TRY)
+            if status == "slow":
+                status, text = "skip", "skipped"
+            else:
+                streak = 0          # a quick success earns full time again
+        else:
+            status, text, sec, err = check_cell(f, g, h, p, time_limit)
+            streak = streak + 1 if status == "slow" else 0
+        col.append((i, p.bit_length(), status, text, sec, err))
+    # Memory tracing slows a loop 10-20x, so measure on the biggest challenge
+    # this function solved in under a twentieth of the time limit.
+    quick = sorted(((b, i) for i, b, s, t, sec, e in col
+                    if s == "ok" and sec < time_limit / 20), reverse=True)
+    memory = None
+    for b, i in quick[:3]:
+        peak = peak_memory(f, i, 2 * time_limit)
+        if peak is not None:
+            memory = (peak, i)
+            break
+    return col, memory
 
 
 def test_dlog(*fs, time_limit=1.0, challenges=None, markdown=False, out=None,
@@ -109,11 +165,15 @@ def test_dlog(*fs, time_limit=1.0, challenges=None, markdown=False, out=None,
     if parallel and len(fs) > 1:
         import multiprocessing as mp
         with mp.get_context("fork").Pool(len(fs)) as pool:
-            cols = pool.starmap(_column, [(j, which, time_limit, give_up)
-                                          for j in range(len(fs))])
+            out_cols = pool.starmap(_column, [(j, which, time_limit, give_up)
+                                              for j in range(len(fs))])
     else:
-        cols = [_column(j, which, time_limit, give_up)
-                for j in range(len(fs))]
+        out_cols = [_column(j, which, time_limit, give_up)
+                    for j in range(len(fs))]
+    cols = [c for c, _ in out_cols]
+    memory = {n: m for n, (_, m) in zip(names, out_cols)}
+    first_error = {n: next((c[5] for c in col if c[2] == "error"), None)
+                   for n, col in zip(names, cols)}
     mark = {"ok": "✓", "slow": "·", "wrong": "✗", "error": "✗", "skip": "·"}
     results = {n: [(i, b, s) for i, b, s, *_ in c] for n, c in zip(names, cols)}
 
@@ -142,26 +202,29 @@ def test_dlog(*fs, time_limit=1.0, challenges=None, markdown=False, out=None,
 
     # summary first
     sh = ["function", "right", "wrong", "errors", f"over {time_limit:g} s",
-          "skipped", SUMMARY_BIGGEST]
+          "skipped", SUMMARY_BIGGEST, "peak memory"]
     srows = []
     for n in names:
         st = [s for _, _, s in results[n]]
         srows.append([f"`{n}`" if markdown else n,
                       f"{st.count('ok')} of {len(st)}", str(st.count("wrong")),
                       str(st.count("error")), str(st.count("slow")),
-                      str(st.count("skip")), _biggest(results[n])])
+                      str(st.count("skip")), _biggest(results[n]),
+                      _memory(memory[n])])
     if markdown:
         print("| " + " | ".join(sh) + " |\n|---|" + "---:|" * (len(sh) - 1),
               file=out)
         for rw in srows:
             print("| " + " | ".join(rw) + " |", file=out)
+        _errors(first_error, markdown, out)
         print(f"\n### Where something went wrong ({len(trouble)} of "
               f"{len(rows)} cases)\n", file=out)
         print("✓ right, with its time · stopped at the time limit "
               "✗ wrong answer or error\n", file=out)
         if any(c[r][2] == "skip" for c in cols for r in range(len(rows))):
             print(f"A function that ran out of time on {give_up} challenges "
-                  "in a row was not tried on the bigger ones (skipped). For "
+                  f"in a row gets only a {QUICK_TRY:g} s try on the bigger "
+                  "ones; \"skipped\" means that quick try ran out too. For "
                   "the full run: Actions tab, Discrete log profile, Run "
                   "workflow, tick full.\n", file=out)
         table(trouble) if trouble else print("Nothing: every function "
@@ -175,10 +238,53 @@ def test_dlog(*fs, time_limit=1.0, challenges=None, markdown=False, out=None,
         for rw in [sh] + srows:
             print("  " + "  ".join(x.rjust(wk) for x, wk in zip(rw, w)),
                   file=out)
+        _errors(first_error, markdown, out)
         print(f"\nWhere something went wrong ({len(trouble)} of {len(rows)}):",
               file=out)
         table(trouble)
+    test_dlog.last = dict(names=names, which=which, cols=cols, memory=memory,
+                          first_error=first_error, time_limit=time_limit,
+                          give_up=give_up)
     return results, cols
+
+
+def write_json(path, labels, sources):
+    """Everything from the last test_dlog call, for other views."""
+    r = test_dlog.last
+    data = dict(
+        time_limit=r["time_limit"], give_up=r["give_up"], quick_try=QUICK_TRY,
+        challenges=[dict(id=i, bits=CHALLENGES[i - 1][0].bit_length(),
+                         p=str(CHALLENGES[i - 1][0])) for i in r["which"]],
+        functions=[dict(name=n, source=sources.get(n, ""),
+                        first_error=r["first_error"][n],
+                        memory=(None if r["memory"][n] is None else
+                                dict(bytes=r["memory"][n][0],
+                                     challenge=r["memory"][n][1])),
+                        cells=[dict(id=i, status=st, text=t, seconds=sec)
+                               for i, b, st, t, sec, e in col])
+                   for n, col in zip(r["names"], r["cols"])])
+    with open(path, "w") as f:
+        json.dump(data, f, indent=1)
+
+
+def _memory(m):
+    if m is None:
+        return "not measured"
+    peak, i = m
+    return f"{fmt_bytes(peak)} on #{i} ({CHALLENGES[i - 1][0].bit_length()} bits)"
+
+
+def _errors(first_error, markdown, out):
+    """The first error message of each function that raised one."""
+    errs = [(n, e) for n, e in first_error.items() if e]
+    if not errs:
+        return
+    print("\n**First error from each function that raised one** (the "
+          "profiler calls `f(g, h, p)` with three ints):\n" if markdown
+          else "\nFirst error from each function that raised one "
+          "(the profiler calls f(g, h, p) with three ints):", file=out)
+    for n, e in errs:
+        print(f"- `{n}`: `{e}`" if markdown else f"  {n}: {e}", file=out)
 
 
 def line_profile(f, challenge, extra=(), markdown=False, out=None,
@@ -258,6 +364,7 @@ if __name__ == "__main__":
     ap.add_argument("--time-limit", type=float, default=1.0)
     ap.add_argument("--markdown", action="store_true")
     ap.add_argument("--no-lines", action="store_true")
+    ap.add_argument("--json", help="also write the results to this file")
     ap.add_argument("--give-up", type=int, default=3,
                     help="drop a function after this many time-outs in a "
                          "row; 0 runs everything")
@@ -283,8 +390,11 @@ if __name__ == "__main__":
         if not a.give_up:
             print("Full run: every function on every challenge.\n")
     t0 = time.time()
+    sources = {n: inspect.getsource(f) for n, f in zip(labels, fs)}
     res, cols = test_dlog(dict(zip(labels, fs)), time_limit=a.time_limit, markdown=md,
                           parallel=True, give_up=a.give_up or None)
+    if a.json:
+        write_json(a.json, labels, sources)
     if not a.no_lines:
         print("\n### Line by line (click to open)\n" if md else "\nLine by line")
         print("Each function once, on the biggest challenge it solved in under "
@@ -292,7 +402,7 @@ if __name__ == "__main__":
               "computer; % is the share of that function's own time.\n"
               if md else "")
         for f, col in zip(fs, cols):
-            quick = [(b, i) for i, b, s, t, sec in col
+            quick = [(b, i) for i, b, s, t, sec, *_ in col
                      if s == "ok" and sec < a.time_limit / 10]
             if quick:
                 line_profile(f, max(quick)[1], markdown=md)
