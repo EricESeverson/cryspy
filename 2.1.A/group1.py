@@ -139,6 +139,7 @@ def poh_hell_dlog(g: int, h: int, p: int) -> int: # returning x where g ^ x =h m
            if pow(b, i, p) == a:
                cris.append((i, order))
   
-   print(cris)
    return crt(*cris)
+
+
 
