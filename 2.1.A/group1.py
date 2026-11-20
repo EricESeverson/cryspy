@@ -6,7 +6,7 @@ import cryspy.number_theory as nt
 def dlog_slowest(g, h, p):
     for i in range(p):
         if pow(g, i, p) == h:
-            return i
+            yield i
 
 def check_dlog(xs, ys, k, p):
     """Returns whether x_i ** k = y_i mod p for all i.
@@ -39,6 +39,8 @@ def dlog(x, y, p,
     ):
     if algorithm == "baby step giant step":
         generator = _baby_step_giant_step(x, y, p)
+    if algorithm == "bash":
+        generator = dlog_slowest(x, y, p)
     else:
         raise NotImplementedError()
         
@@ -46,7 +48,6 @@ def dlog(x, y, p,
         return generator.__next__()
 
     return generator
-
 
 
 
