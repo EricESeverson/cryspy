@@ -35,3 +35,77 @@ def dlog(xs, ys, p):
             k = e1 + seen[j] * d
             if (_check_dlog(xs, ys, k, p)):
                 return k
+
+
+def _gcd(a, b):
+    if b == 0: return a
+    return gcd(b, a % b)
+
+def _lcm(a, b):
+    return (a * b) // _gcd(a, b)
+
+def gcd(*args):
+    """Returns the gcd of all arguments.
+
+    Args:
+        *args: integers to take gcd of
+
+    Returns:
+        An integer which is the gcd of all args.
+    """
+
+    if len(args) == 0:
+        return 0
+
+    g = args[0]
+
+    for a in args[1:]:
+        g = _gcd(g, a)
+    
+    return g
+
+
+def lcm(*args):
+    """Returns the lcm of all arguments.
+
+    Args:
+        *args: integers to take lcm of
+
+    Returns:
+        An integer which is the lcm of all args.
+    """
+
+    if len(args) == 0:
+        return 1
+
+    l = args[0]
+
+    for a in args[1:]:
+        l = _lcm(l, a)
+    
+    return l
+
+
+def crt(*args):
+    """TODO"""
+    
+    if len(args) == 0:
+        raise
+
+    a, n = args[0][0], args[0][1]
+
+    for (a0, n0) in args[1:]:
+        g = gcd(n, n0)
+        if (a0%g) != 1:
+            return None
+            
+        a0 //= g
+        n0 //= g
+
+        j = ((a0 - a) * nt.mult_inverse(n, n0))%(n0)
+
+        a = (a + n * j)
+        n = n * n0
+
+    return a, n
+
