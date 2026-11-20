@@ -24,12 +24,12 @@ def lcm(*ints):
     if len(ints) == 0:
         return 1
     if len(ints) == 1:
-        return ints[0]
+        return abs(ints[0])
     if len(ints) == 2:
-        return int(ints[0]*ints[1]/cp.gcd(ints[0], ints[1]))
+        return abs(int(ints[0]*ints[1]/cp.gcd(ints[0], ints[1])))
 
     else:
-        return lcm(lcm(ints[0],ints[1]), *ints[2:])
+        return abs(lcm(lcm(ints[0],ints[1]), *ints[2:]))
 
 
 def crt(*kwargs) -> tuple[int, int]:
