@@ -16,11 +16,10 @@ def gcd(*nums):
         return abs(gcd(b, a % b))
 
     else:
-        return abs(gcd(gcd(nums[0], nums[1]), *nums[2:])
+        return abs(gcd(gcd(nums[0], nums[1]), *nums[2:]))
 
 
 def lcm(*ints):
-    #print(ints)
     if len(ints) == 0:
         return 1
     if len(ints) == 1:
@@ -56,6 +55,7 @@ def crt(*kwargs) -> tuple[int, int]:
             return k[0]
         return crt(*k)
 
+
 def dlog_slow(g: int, h: int, p: int) -> int:
     """returns log_g(h) mod p"""
     product = 1
@@ -65,14 +65,17 @@ def dlog_slow(g: int, h: int, p: int) -> int:
         if product == h:
             return i
 
+
 def dlog_slowest(g: int, h: int, p: int) -> int:
     """returns log_g(h) mod p"""
     for i in range(p):
         if pow(g, i, p) == h:
             return i
 
+
 def dlog_think(g: int,h: int,p: int) -> int:
-    """returns log_g(h) mod p"""
+    """returns log_g(h) mod p
+    uses window alg (Babystep-Giantstep)"""
     window_size = math.floor(math.sqrt(p))
     window = {}
     prod = 1
