@@ -2,6 +2,19 @@
 import cryspy as cp
 import math
 
+def lcm(*ints):
+    #print(ints)
+    if len(ints) == 0:
+        return 1
+    if len(ints) == 1:
+        return ints[0]
+    if len(ints) == 2:
+        return int(ints[0]*ints[1]/cp.gcd(ints[0], ints[1]))
+
+    else:
+        return lcm(lcm(ints[0],ints[1]), *ints[2:])
+
+
 def dlog_slow(g: int, h: int, p: int) -> int:
     """returns log_g(h) mod p"""
     product = 1
