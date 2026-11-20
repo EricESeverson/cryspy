@@ -73,7 +73,7 @@ def dlog_slowest(g: int, h: int, p: int) -> int:
             return i
 
 
-def dlog_think(g: int,h: int,p: int) -> int:
+def dlog_window(g: int,h: int,p: int) -> int:
     """returns log_g(h) mod p
     uses window alg (Babystep-Giantstep)"""
     window_size = math.floor(math.sqrt(p))
