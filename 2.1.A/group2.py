@@ -5,13 +5,13 @@ import cryspy.number_theory as nt
 def gcd(*args):
     g = 0
     for x in args:
-        g = cp.gcd(g,x)
+        g = cp.gcd(g,abs(x))
     return g
 
 def lcm(*args):
     l = 1
     for x in args:
-        l = (x*l)//gcd(x,l)
+        l = (abs(x)*l)//gcd(abs(x),l)
     return l
 
 def dlog_slow(g,h,p):
