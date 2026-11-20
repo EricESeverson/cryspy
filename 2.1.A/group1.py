@@ -109,3 +109,36 @@ def crt(*args):
 
     return a, n
 
+def poh_hell_dlog(g: int, h: int, p: int) -> int: # returning x where g ^ x =h mod p
+   """Discrete log mod p, using the Pohlig-Hellman algorithm
+  
+   Args:
+       g: log base
+       h: log value
+       p: prime modulus
+  
+   Returns:
+       int x where g ^ x = h mod p, or log_g(h) mod p
+   """
+  
+   factorization = nt.factorize(p-1)
+   cris = []
+
+
+   for prime, exp in factorization.items():
+       order = pow(prime, exp, p) # prime ^ exp
+       new_mod = (p-1) // order # p-1 / order
+  
+       a = pow(h, new_mod, p) # h ^ (p-1 / order)
+       b = pow(g, new_mod, p) # q ^ (p-1 / order)
+
+
+       # manual dlog in Z_order subgroup
+       # finding b ^ x = a
+       for i in range(1, order):
+           if pow(b, i, p) == a:
+               cris.append((i, order))
+  
+   print(cris)
+   return crt(*cris)
+
