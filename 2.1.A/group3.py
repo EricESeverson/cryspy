@@ -31,29 +31,52 @@ def lcm(*ints):
         return abs(lcm(lcm(ints[0],ints[1]), *ints[2:]))
 
 
-def crt(*kwargs) -> tuple[int, int]:
-    """Does crt on input
+def crt(*args) -> tuple[int, int]:
+    """Does crt on input. Works with non-coprime mods
     
     Args:
-        *kwargs: a bunch of tuples (x_i, m_i)
+        *args: a bunch of tuples (x_i, m_i)
     
     Returns:
         a tuple (x, m) that satisfies given conditions
+        None if no solution
     """
-    if len(kwargs) >= 2:
-        x1 = kwargs[0][0]
-        m1 = kwargs[0][1]
-        x2 = kwargs[1][0]
-        m2 = kwargs[1][1]
+    for i, (x, m) in enumerate(args):
+        for j in range(i+1, len(args)):
+            g = cp.gcd(m, args[j][1])
+            if g != 1:
+                args = (*args[:i], (x, m/g), *args[i+1:])
+
+    return crt_relatively_prime(*args)
+
+
+def crt_relatively_prime(*args) -> tuple[int, int]:
+    """Does crt on input. Only works if mods are relatively prime
+    
+    Args:
+        *args: a bunch of tuples (x_i, m_i)
+    
+    Returns:
+        a tuple (x, m) that satisfies given conditions
+        None if no solution
+    """
+    if len(args) >= 2:
+        x1 = args[0][0]
+        m1 = args[0][1]
+        x2 = args[1][0]
+        m2 = args[1][1]
 
         inv = cp.mult_inverse(m1, m2)
         j = ((x2-x1) * inv) % m2
         x = (m1 * j + x1) % (m1*m2)
 
-        k = ((x, m1*m2), *kwargs[2:])
+        k = ((x, m1*m2), *args[2:])
         if len(k) == 1:
             return k[0]
-        return crt(*k)
+        return crt_relatively_prime(*k)
+    if len(args) == 1:
+        return args[0]
+    return None
 
 
 def dlog_slow(g: int, h: int, p: int) -> int:
