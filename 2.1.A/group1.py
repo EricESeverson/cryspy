@@ -57,6 +57,7 @@ def _gcd(a, b):
 def _lcm(a, b):
     return (a * b) // _gcd(a, b)
 
+
 def gcd(*args):
     """Returns the gcd of all arguments.
 
@@ -70,10 +71,10 @@ def gcd(*args):
     if len(args) == 0:
         return 0
 
-    g = args[0]
+    g = abs(args[0])
 
     for a in args[1:]:
-        g = _gcd(g, a)
+        g = _gcd(g, abs(a))
     
     return g
 
@@ -91,10 +92,10 @@ def lcm(*args):
     if len(args) == 0:
         return 1
 
-    l = args[0]
+    l = abs(args[0])
 
     for a in args[1:]:
-        l = _lcm(l, a)
+        l = _lcm(l, abs(a))
     
     return l
 
