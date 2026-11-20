@@ -15,11 +15,7 @@ def dlog_slowest(g, h, p):
         if pow(g, i, p) == h:
             return i
 
-# solves x_i ** a = y_i
-def dlog(xs, ys, p):
-    x = xs[0]
-    y = ys[0]
-
+def dlog(x, y, p):
     d = nt.isqrt(p)
     x_hat = pow(x, d, p)
     # x^e1 * x_hat ^ e2 \equiv y mod p
