@@ -60,10 +60,10 @@ def dlog_slow(g: int, h: int, p: int) -> int:
     """returns log_g(h) mod p"""
     product = 1
     for i in range(p):
-        product *= g
-        product %= p
         if product == h:
             return i
+        product *= g
+        product %= p
 
 
 def dlog_slowest(g: int, h: int, p: int) -> int:
