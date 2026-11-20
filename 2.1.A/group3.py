@@ -33,6 +33,30 @@ def lcm(*ints):
         return lcm(lcm(ints[0],ints[1]), *ints[2:])
 
 
+def crt(*kwargs) -> tuple[int, int]:
+    """Does crt on input
+    
+    Args:
+        *kwargs: a bunch of tuples (x_i, m_i)
+    
+    Returns:
+        a tuple (x, m) that satisfies given conditions
+    """
+    if len(kwargs) >= 2:
+        x1 = kwargs[0][0]
+        m1 = kwargs[0][1]
+        x2 = kwargs[1][0]
+        m2 = kwargs[1][1]
+
+        inv = cp.mult_inverse(m1, m2)
+        j = ((x2-x1) * inv) % m2
+        x = (m1 * j + x1) % (m1*m2)
+
+        k = ((x, m1*m2), *kwargs[2:])
+        if len(k) == 1:
+            return k[0]
+        return crt(*k)
+
 def dlog_slow(g: int, h: int, p: int) -> int:
     """returns log_g(h) mod p"""
     product = 1
